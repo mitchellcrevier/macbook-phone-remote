@@ -5,13 +5,11 @@ import pyautogui
 
 from flask import Flask, send_from_directory
 from flask_socketio import SocketIO
-from pynput.mouse import Controller
 
 pyautogui.FAILSAFE = False
 
 app = Flask(__name__, static_folder="static")
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
-mouse = Controller()
 
 
 def get_local_ip():
@@ -32,8 +30,7 @@ def index():
 def handle_mousemove(data):
     dx = data.get("dx", 0)
     dy = data.get("dy", 0)
-    x, y = mouse.position
-    mouse.position = (x + dx, y + dy)
+    pyautogui.moveRel(int(dx), int(dy), duration=0)
 
 
 @socketio.on("leftclick")
