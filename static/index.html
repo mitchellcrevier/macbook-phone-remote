@@ -41,24 +41,17 @@
       gap: 10px;
     }
 
-    /* Status bar */
+    /* ── Status bar ─────────────────────────────────────── */
     #status-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 4px;
-      height: 28px;
+      height: 36px;
       flex-shrink: 0;
     }
 
-    #status-label {
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-    }
-
-    #status-right {
+    #status-left {
       display: flex;
       align-items: center;
       gap: 8px;
@@ -75,6 +68,13 @@
     #status-dot.connected  { background: #22c55e; }
     #status-dot.disconnected { background: var(--danger); }
 
+    #status-label {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
     #btn-reconnect {
       display: none;
       font-size: 11px;
@@ -90,9 +90,30 @@
       touch-action: manipulation;
     }
 
-    #status-dot.disconnected ~ #btn-reconnect { display: block; }
+    /* Power button */
+    #btn-power {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1.5px solid rgba(239, 68, 68, 0.35);
+      color: var(--danger);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
 
-    /* Main section: sliders + trackpad side by side */
+    #btn-power:active, #btn-power.pressing {
+      background: rgba(239, 68, 68, 0.28);
+      border-color: var(--danger);
+      transform: scale(0.93);
+    }
+
+    /* ── Main section: sliders + trackpad ───────────────── */
     #main-section {
       flex: 1;
       display: flex;
@@ -171,7 +192,7 @@
       pointer-events: none;
     }
 
-    /* Trackpad */
+    /* ── Trackpad ────────────────────────────────────────── */
     #trackpad {
       flex: 1;
       background: var(--surface);
@@ -198,15 +219,9 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 8px;
       pointer-events: none;
       transition: opacity 0.3s;
-    }
-
-    #trackpad-hint svg {
-      opacity: 0.12;
-      width: 36px;
-      height: 36px;
     }
 
     #trackpad-hint span {
@@ -214,6 +229,8 @@
       color: var(--text-dim);
       letter-spacing: 0.06em;
       text-transform: uppercase;
+      text-align: center;
+      line-height: 1;
     }
 
     .trackpad-active #trackpad-hint { opacity: 0; }
@@ -252,10 +269,10 @@
 
     .scroll-mode #scroll-badge { opacity: 1; }
 
-    /* Button row */
+    /* ── Button row ──────────────────────────────────────── */
     #buttons {
       display: grid;
-      grid-template-columns: 1fr auto 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
       flex-shrink: 0;
       height: 72px;
@@ -265,14 +282,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 7px;
       border-radius: 14px;
       border: 1px solid var(--border);
       background: var(--btn-bg);
       color: var(--text);
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.02em;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       transition: background 0.1s, transform 0.1s, border-color 0.1s;
@@ -283,48 +296,35 @@
       background: var(--btn-active);
       transform: scale(0.96);
     }
-
-    .btn svg { opacity: 0.55; flex-shrink: 0; }
-
-    #btn-sleep {
-      width: 72px;
-      flex-direction: column;
-      gap: 5px;
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      border-color: var(--border);
-    }
-
-    #btn-sleep svg { opacity: 0.35; }
-    #btn-sleep:active, #btn-sleep.pressing { border-color: var(--danger); color: var(--danger); }
-    #btn-sleep:active svg, #btn-sleep.pressing svg { opacity: 0.7; }
   </style>
 </head>
 <body>
   <div id="app">
+
     <div id="status-bar">
-      <span id="status-label">Mac Remote</span>
-      <div id="status-right">
+      <div id="status-left">
         <div id="status-dot"></div>
+        <span id="status-label">Mac Remote</span>
         <button id="btn-reconnect">Reconnect</button>
       </div>
+      <button id="btn-power">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+          <line x1="12" y1="2" x2="12" y2="12"/>
+        </svg>
+      </button>
     </div>
 
     <div id="main-section">
 
       <div id="side-sliders">
-
         <!-- Speed -->
         <div class="pill-wrap">
           <span class="pill-label">Spd</span>
           <div class="pill-slider" id="speed-pill">
             <div class="pill-fill" id="speed-fill"></div>
             <svg class="pill-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-              <path d="M2 17l10 5 10-5"/>
-              <path d="M2 12l10 5 10-5"/>
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
             </svg>
             <span class="pill-val" id="speed-val">2.2</span>
           </div>
@@ -343,16 +343,13 @@
             <span class="pill-val" id="volume-val">50%</span>
           </div>
         </div>
-
       </div>
 
       <div id="trackpad">
         <div id="trackpad-hint">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M9 11V6a3 3 0 0 1 6 0v5"/>
-            <path d="M5 11h14l-1.5 9h-11L5 11z"/>
-          </svg>
-          <span>Tap to click &bull; Drag to move &bull; 2-finger scroll</span>
+          <span>Tap to click</span>
+          <span>Drag to move</span>
+          <span>Two finger scroll</span>
         </div>
         <div id="scroll-badge">Scroll</div>
       </div>
@@ -360,30 +357,35 @@
     </div>
 
     <div id="buttons">
+      <!-- Left click -->
       <button class="btn" id="btn-left">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="3"/>
-          <line x1="12" y1="3" x2="12" y2="21"/>
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <defs>
+            <clipPath id="mc-l"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath>
+          </defs>
+          <rect x="5" y="2" width="14" height="20" rx="7"/>
+          <line x1="12" y1="2" x2="12" y2="10"/>
+          <line x1="5" y1="10" x2="19" y2="10"/>
+          <rect x="5" y="2" width="7" height="8" fill="currentColor" opacity="0.35" stroke="none" clip-path="url(#mc-l)"/>
+          <circle cx="12" cy="6" r="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/>
         </svg>
-        Left Click
       </button>
 
-      <button class="btn" id="btn-sleep">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-          <circle cx="12" cy="12" r="5"/>
-        </svg>
-        Sleep
-      </button>
-
+      <!-- Right click -->
       <button class="btn" id="btn-right">
-        Right Click
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="3"/>
-          <line x1="12" y1="3" x2="12" y2="21"/>
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <defs>
+            <clipPath id="mc-r"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath>
+          </defs>
+          <rect x="5" y="2" width="14" height="20" rx="7"/>
+          <line x1="12" y1="2" x2="12" y2="10"/>
+          <line x1="5" y1="10" x2="19" y2="10"/>
+          <rect x="12" y="2" width="7" height="8" fill="currentColor" opacity="0.35" stroke="none" clip-path="url(#mc-r)"/>
+          <circle cx="12" cy="6" r="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/>
         </svg>
       </button>
     </div>
+
   </div>
 
   <script>
@@ -408,17 +410,21 @@
       socket.connect();
     });
 
-    // ── Pill sliders ─────────────────────────────────────────
+    // ── Power button ─────────────────────────────────────────
+    const powerBtn = document.getElementById('btn-power');
+    powerBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      powerBtn.classList.add('pressing');
+      socket.emit('sleep');
+      navigator.vibrate?.(12);
+      setTimeout(() => powerBtn.classList.remove('pressing'), 200);
+    });
 
+    // ── Pill sliders ─────────────────────────────────────────
     const SPEED_MIN = 0.5, SPEED_MAX = 5.0;
     let sensitivity = 2.2;
 
-    function makePillSlider(pillId, fillId, valId, {
-      toValue,    // pct (0–1) → domain value
-      toPct,      // domain value → pct
-      format,     // domain value → display string
-      onCommit,   // domain value → side effect
-    }) {
+    function makePillSlider(pillId, fillId, valId, { toValue, toPct, format, onCommit }) {
       const pill = document.getElementById(pillId);
       const fill = document.getElementById(fillId);
       const label = document.getElementById(valId);
@@ -438,53 +444,36 @@
         return 1 - (e.touches[0].clientY - rect.top) / rect.height;
       }
 
-      pill.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        setPct(pctFromTouch(e));
-      }, { passive: false });
+      pill.addEventListener('touchstart', (e) => { e.preventDefault(); setPct(pctFromTouch(e)); }, { passive: false });
+      pill.addEventListener('touchmove',  (e) => { e.preventDefault(); setPct(pctFromTouch(e)); }, { passive: false });
 
-      pill.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        setPct(pctFromTouch(e));
-      }, { passive: false });
-
-      // Init fill to current value
       fill.style.height = (toPct() * 100) + '%';
     }
 
-    // Speed pill
     makePillSlider('speed-pill', 'speed-fill', 'speed-val', {
-      toValue: (pct) => SPEED_MIN + pct * (SPEED_MAX - SPEED_MIN),
-      toPct:   ()    => (sensitivity - SPEED_MIN) / (SPEED_MAX - SPEED_MIN),
-      format:  (v)   => v.toFixed(1),
-      onCommit:(v)   => { sensitivity = v; },
+      toValue: (p) => SPEED_MIN + p * (SPEED_MAX - SPEED_MIN),
+      toPct:   ()  => (sensitivity - SPEED_MIN) / (SPEED_MAX - SPEED_MIN),
+      format:  (v) => v.toFixed(1),
+      onCommit:(v) => { sensitivity = v; },
     });
 
-    // Volume pill
     let currentVolume = 50;
-
     makePillSlider('volume-pill', 'volume-fill', 'volume-val', {
-      toValue: (pct) => Math.round(pct * 100),
-      toPct:   ()    => currentVolume / 100,
-      format:  (v)   => v + '%',
-      onCommit:(v)   => { currentVolume = v; socket.emit('volume', { level: v }); },
+      toValue: (p) => Math.round(p * 100),
+      toPct:   ()  => currentVolume / 100,
+      format:  (v) => v + '%',
+      onCommit:(v) => { currentVolume = v; socket.emit('volume', { level: v }); },
     });
 
-    // Load current Mac volume on connect
     fetch('/volume').then(r => r.json()).then(d => {
       currentVolume = d.level;
-      const fill = document.getElementById('volume-fill');
-      const label = document.getElementById('volume-val');
-      fill.style.height = d.level + '%';
-      label.textContent = d.level + '%';
+      document.getElementById('volume-fill').style.height = d.level + '%';
+      document.getElementById('volume-val').textContent = d.level + '%';
     }).catch(() => {});
 
     // ── Trackpad ─────────────────────────────────────────────
-
-    let lastX = null, lastY = null;
-    let startX = null, startY = null;
-    let hasMoved = false;
-    let isScrolling = false;
+    let lastX = null, lastY = null, startX = null, startY = null;
+    let hasMoved = false, isScrolling = false;
     const TAP_THRESHOLD = 8;
 
     function addRipple(x, y) {
@@ -500,24 +489,20 @@
       e.preventDefault();
       isScrolling = e.touches.length >= 2;
       hasMoved = false;
-
       const t = e.touches[0];
       lastX = startX = t.clientX;
       lastY = startY = t.clientY;
-
       if (isScrolling) {
         trackpad.classList.add('scroll-mode');
       } else {
         const rect = trackpad.getBoundingClientRect();
         addRipple(t.clientX - rect.left, t.clientY - rect.top);
       }
-
       trackpad.classList.add('trackpad-active');
     }, { passive: false });
 
     trackpad.addEventListener('touchmove', (e) => {
       e.preventDefault();
-
       if (e.touches.length >= 2 || isScrolling) {
         trackpad.classList.add('scroll-mode');
         isScrolling = true;
@@ -530,20 +515,11 @@
         lastY = t.clientY;
         return;
       }
-
       const t = e.touches[0];
-      const totalDx = t.clientX - startX;
-      const totalDy = t.clientY - startY;
-      if (Math.abs(totalDx) > TAP_THRESHOLD || Math.abs(totalDy) > TAP_THRESHOLD) {
-        hasMoved = true;
-      }
-
+      if (Math.abs(t.clientX - startX) > TAP_THRESHOLD || Math.abs(t.clientY - startY) > TAP_THRESHOLD) hasMoved = true;
       const dx = (t.clientX - lastX) * sensitivity;
       const dy = (t.clientY - lastY) * sensitivity;
-      if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
-        socket.emit('mousemove', { dx: Math.round(dx), dy: Math.round(dy) });
-      }
-
+      if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) socket.emit('mousemove', { dx: Math.round(dx), dy: Math.round(dy) });
       lastX = t.clientX;
       lastY = t.clientY;
     }, { passive: false });
@@ -551,10 +527,7 @@
     trackpad.addEventListener('touchend', (e) => {
       e.preventDefault();
       if (e.touches.length === 0) {
-        if (!hasMoved && !isScrolling) {
-          socket.emit('leftclick');
-          navigator.vibrate?.(8);
-        }
+        if (!hasMoved && !isScrolling) { socket.emit('leftclick'); navigator.vibrate?.(8); }
         lastX = lastY = startX = startY = null;
         hasMoved = false;
         isScrolling = false;
@@ -562,8 +535,7 @@
       }
     }, { passive: false });
 
-    // ── Buttons ───────────────────────────────────────────────
-
+    // ── Click buttons ─────────────────────────────────────────
     function pressBtn(el, event) {
       el.classList.add('pressing');
       socket.emit(event);
@@ -571,20 +543,8 @@
       setTimeout(() => el.classList.remove('pressing'), 150);
     }
 
-    document.getElementById('btn-left').addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      pressBtn(e.currentTarget, 'leftclick');
-    });
-
-    document.getElementById('btn-right').addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      pressBtn(e.currentTarget, 'rightclick');
-    });
-
-    document.getElementById('btn-sleep').addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      pressBtn(e.currentTarget, 'sleep');
-    });
+    document.getElementById('btn-left').addEventListener('touchstart', (e) => { e.preventDefault(); pressBtn(e.currentTarget, 'leftclick'); });
+    document.getElementById('btn-right').addEventListener('touchstart', (e) => { e.preventDefault(); pressBtn(e.currentTarget, 'rightclick'); });
   </script>
 </body>
 </html>
