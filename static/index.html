@@ -72,7 +72,7 @@
       transition: background 0.3s;
     }
 
-    #status-dot.connected { background: #22c55e; }
+    #status-dot.connected  { background: #22c55e; }
     #status-dot.disconnected { background: var(--danger); }
 
     #btn-reconnect {
@@ -90,85 +90,85 @@
       touch-action: manipulation;
     }
 
-    #status-dot.disconnected ~ #btn-reconnect,
-    .show-reconnect #btn-reconnect { display: block; }
+    #status-dot.disconnected ~ #btn-reconnect { display: block; }
 
-    /* Speed control */
-    #speed-row {
+    /* Main section: sliders + trackpad side by side */
+    #main-section {
+      flex: 1;
       display: flex;
-      align-items: center;
+      flex-direction: row;
       gap: 10px;
-      flex-shrink: 0;
-      padding: 0 4px;
+      min-height: 0;
     }
 
-    #speed-label {
-      font-size: 11px;
+    /* Vertical pill sliders */
+    #side-sliders {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      flex-shrink: 0;
+      width: 96px;
+    }
+
+    .pill-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pill-label {
+      font-size: 9px;
       color: var(--text-dim);
-      letter-spacing: 0.05em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      min-width: 42px;
-    }
-
-    #speed-slider {
-      flex: 1;
-      -webkit-appearance: none;
-      height: 3px;
-      background: var(--border);
-      border-radius: 2px;
-      outline: none;
-    }
-
-    #speed-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: var(--text);
-      cursor: pointer;
-    }
-
-    #speed-val {
-      font-size: 11px;
-      color: var(--text-dim);
-      min-width: 24px;
-      text-align: right;
-    }
-
-    /* Volume control */
-    #volume-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
       flex-shrink: 0;
-      padding: 0 4px;
     }
 
-    #volume-row svg { opacity: 0.4; flex-shrink: 0; }
-
-    #volume-slider {
+    .pill-slider {
       flex: 1;
-      -webkit-appearance: none;
-      height: 3px;
-      background: var(--border);
-      border-radius: 2px;
-      outline: none;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      position: relative;
+      overflow: hidden;
+      touch-action: none;
     }
 
-    #volume-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: var(--text);
-      cursor: pointer;
+    .pill-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.22);
+      border-radius: 22px;
+      transition: height 0.06s ease-out;
     }
 
-    #volume-val {
-      font-size: 11px;
+    .pill-icon {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0.3;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .pill-val {
+      position: absolute;
+      bottom: 12px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 500;
       color: var(--text-dim);
-      min-width: 32px;
-      text-align: right;
+      letter-spacing: 0.02em;
+      z-index: 2;
+      pointer-events: none;
     }
 
     /* Trackpad */
@@ -312,31 +312,51 @@
       </div>
     </div>
 
-    <div id="speed-row">
-      <span id="speed-label">Speed</span>
-      <input id="speed-slider" type="range" min="0.5" max="5" step="0.1" value="2.2" />
-      <span id="speed-val">2.2</span>
-    </div>
+    <div id="main-section">
 
-    <div id="volume-row">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-      </svg>
-      <input id="volume-slider" type="range" min="0" max="100" step="1" value="50" />
-      <span id="volume-val">50%</span>
-    </div>
+      <div id="side-sliders">
 
-    <div id="trackpad">
-      <div id="trackpad-hint">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M9 11V6a3 3 0 0 1 6 0v5"/>
-          <path d="M5 11h14l-1.5 9h-11L5 11z"/>
-        </svg>
-        <span>Tap to click &bull; Drag to move &bull; 2-finger scroll</span>
+        <!-- Speed -->
+        <div class="pill-wrap">
+          <span class="pill-label">Spd</span>
+          <div class="pill-slider" id="speed-pill">
+            <div class="pill-fill" id="speed-fill"></div>
+            <svg class="pill-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+            <span class="pill-val" id="speed-val">2.2</span>
+          </div>
+        </div>
+
+        <!-- Volume -->
+        <div class="pill-wrap">
+          <span class="pill-label">Vol</span>
+          <div class="pill-slider" id="volume-pill">
+            <div class="pill-fill" id="volume-fill"></div>
+            <svg class="pill-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+            </svg>
+            <span class="pill-val" id="volume-val">50%</span>
+          </div>
+        </div>
+
       </div>
-      <div id="scroll-badge">Scroll</div>
+
+      <div id="trackpad">
+        <div id="trackpad-hint">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9 11V6a3 3 0 0 1 6 0v5"/>
+            <path d="M5 11h14l-1.5 9h-11L5 11z"/>
+          </svg>
+          <span>Tap to click &bull; Drag to move &bull; 2-finger scroll</span>
+        </div>
+        <div id="scroll-badge">Scroll</div>
+      </div>
+
     </div>
 
     <div id="buttons">
@@ -371,16 +391,6 @@
 
     const dot = document.getElementById('status-dot');
     const trackpad = document.getElementById('trackpad');
-    const speedSlider = document.getElementById('speed-slider');
-    const speedVal = document.getElementById('speed-val');
-
-    let sensitivity = parseFloat(speedSlider.value);
-
-    speedSlider.addEventListener('input', () => {
-      sensitivity = parseFloat(speedSlider.value);
-      speedVal.textContent = sensitivity.toFixed(1);
-    });
-
     const reconnectBtn = document.getElementById('btn-reconnect');
 
     socket.on('connect', () => {
@@ -398,29 +408,84 @@
       socket.connect();
     });
 
-    // Volume
-    const volumeSlider = document.getElementById('volume-slider');
-    const volumeVal = document.getElementById('volume-val');
-    let volumeTimer = null;
+    // ── Pill sliders ─────────────────────────────────────────
 
-    fetch('/volume').then(r => r.json()).then(d => {
-      volumeSlider.value = d.level;
-      volumeVal.textContent = d.level + '%';
-    }).catch(() => {});
+    const SPEED_MIN = 0.5, SPEED_MAX = 5.0;
+    let sensitivity = 2.2;
 
-    volumeSlider.addEventListener('input', () => {
-      const level = parseInt(volumeSlider.value);
-      volumeVal.textContent = level + '%';
-      clearTimeout(volumeTimer);
-      volumeTimer = setTimeout(() => socket.emit('volume', { level }), 80);
+    function makePillSlider(pillId, fillId, valId, {
+      toValue,    // pct (0–1) → domain value
+      toPct,      // domain value → pct
+      format,     // domain value → display string
+      onCommit,   // domain value → side effect
+    }) {
+      const pill = document.getElementById(pillId);
+      const fill = document.getElementById(fillId);
+      const label = document.getElementById(valId);
+      let timer = null;
+
+      function setPct(pct) {
+        pct = Math.max(0, Math.min(1, pct));
+        fill.style.height = (pct * 100) + '%';
+        const val = toValue(pct);
+        label.textContent = format(val);
+        clearTimeout(timer);
+        timer = setTimeout(() => onCommit(val), 60);
+      }
+
+      function pctFromTouch(e) {
+        const rect = pill.getBoundingClientRect();
+        return 1 - (e.touches[0].clientY - rect.top) / rect.height;
+      }
+
+      pill.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        setPct(pctFromTouch(e));
+      }, { passive: false });
+
+      pill.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        setPct(pctFromTouch(e));
+      }, { passive: false });
+
+      // Init fill to current value
+      fill.style.height = (toPct() * 100) + '%';
+    }
+
+    // Speed pill
+    makePillSlider('speed-pill', 'speed-fill', 'speed-val', {
+      toValue: (pct) => SPEED_MIN + pct * (SPEED_MAX - SPEED_MIN),
+      toPct:   ()    => (sensitivity - SPEED_MIN) / (SPEED_MAX - SPEED_MIN),
+      format:  (v)   => v.toFixed(1),
+      onCommit:(v)   => { sensitivity = v; },
     });
 
-    // Trackpad movement
+    // Volume pill
+    let currentVolume = 50;
+
+    makePillSlider('volume-pill', 'volume-fill', 'volume-val', {
+      toValue: (pct) => Math.round(pct * 100),
+      toPct:   ()    => currentVolume / 100,
+      format:  (v)   => v + '%',
+      onCommit:(v)   => { currentVolume = v; socket.emit('volume', { level: v }); },
+    });
+
+    // Load current Mac volume on connect
+    fetch('/volume').then(r => r.json()).then(d => {
+      currentVolume = d.level;
+      const fill = document.getElementById('volume-fill');
+      const label = document.getElementById('volume-val');
+      fill.style.height = d.level + '%';
+      label.textContent = d.level + '%';
+    }).catch(() => {});
+
+    // ── Trackpad ─────────────────────────────────────────────
+
     let lastX = null, lastY = null;
     let startX = null, startY = null;
     let hasMoved = false;
     let isScrolling = false;
-    const TAP_THRESHOLD = 8; // px — less than this = tap, not drag
+    const TAP_THRESHOLD = 8;
 
     function addRipple(x, y) {
       const r = document.createElement('div');
@@ -497,7 +562,8 @@
       }
     }, { passive: false });
 
-    // Buttons
+    // ── Buttons ───────────────────────────────────────────────
+
     function pressBtn(el, event) {
       el.classList.add('pressing');
       socket.emit(event);
