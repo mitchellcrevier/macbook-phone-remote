@@ -3,7 +3,7 @@ import subprocess
 
 import pyautogui
 
-from flask import Flask, send_from_directory
+from flask import Flask, jsonify, send_from_directory
 from flask_socketio import SocketIO
 
 pyautogui.FAILSAFE = False
@@ -48,6 +48,25 @@ def handle_scroll(data):
     dx = data.get("dx", 0)
     dy = data.get("dy", 0)
     pyautogui.scroll(int(-dy))
+
+
+@socketio.on("volume")
+def handle_volume(data):
+    level = max(0, min(100, int(data.get("level", 50))))
+    subprocess.run(["osascript", "-e", f"set volume output volume {level}"])
+
+
+@app.route("/volume")
+def get_volume():
+    result = subprocess.run(
+        ["osascript", "-e", "output volume of (get volume settings)"],
+        capture_output=True, text=True
+    )
+    try:
+        level = int(result.stdout.strip())
+    except ValueError:
+        level = 50
+    return jsonify({"level": level})
 
 
 @socketio.on("sleep")

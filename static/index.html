@@ -135,6 +135,42 @@
       text-align: right;
     }
 
+    /* Volume control */
+    #volume-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      padding: 0 4px;
+    }
+
+    #volume-row svg { opacity: 0.4; flex-shrink: 0; }
+
+    #volume-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    #volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--text);
+      cursor: pointer;
+    }
+
+    #volume-val {
+      font-size: 11px;
+      color: var(--text-dim);
+      min-width: 32px;
+      text-align: right;
+    }
+
     /* Trackpad */
     #trackpad {
       flex: 1;
@@ -282,6 +318,16 @@
       <span id="speed-val">2.2</span>
     </div>
 
+    <div id="volume-row">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+      </svg>
+      <input id="volume-slider" type="range" min="0" max="100" step="1" value="50" />
+      <span id="volume-val">50%</span>
+    </div>
+
     <div id="trackpad">
       <div id="trackpad-hint">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -350,6 +396,23 @@
       e.preventDefault();
       reconnectBtn.textContent = '...';
       socket.connect();
+    });
+
+    // Volume
+    const volumeSlider = document.getElementById('volume-slider');
+    const volumeVal = document.getElementById('volume-val');
+    let volumeTimer = null;
+
+    fetch('/volume').then(r => r.json()).then(d => {
+      volumeSlider.value = d.level;
+      volumeVal.textContent = d.level + '%';
+    }).catch(() => {});
+
+    volumeSlider.addEventListener('input', () => {
+      const level = parseInt(volumeSlider.value);
+      volumeVal.textContent = level + '%';
+      clearTimeout(volumeTimer);
+      volumeTimer = setTimeout(() => socket.emit('volume', { level }), 80);
     });
 
     // Trackpad movement
