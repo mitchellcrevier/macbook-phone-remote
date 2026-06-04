@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Moss — Concept 09: Nature Calm</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Inconsolata:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #131a10;
+      --bg2: #0e1409;
+      --surface: rgba(100,180,80,0.06);
+      --surface-hi: rgba(100,180,80,0.11);
+      --border: rgba(100,180,80,0.12);
+      --border-hi: rgba(100,180,80,0.28);
+      --text: #d4e8c8;
+      --text-mid: #7a9a62;
+      --text-dim: #3a4e2a;
+      --green: #7bc25a;
+      --green-light: #a8d88a;
+      --earth: #c8a86a;
+      --green-bg: rgba(123,194,90,0.08);
+      --green-border: rgba(123,194,90,0.2);
+      --danger: #e8826a;
+      --r: 18px;
+      --font: 'Plus Jakarta Sans', sans-serif;
+      --mono: 'Inconsolata', monospace;
+    }
+
+    html, body {
+      height: 100%;
+      background: #0a1008;
+      color: var(--text);
+      font-family: var(--font);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .back-link {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-family: var(--mono);
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: var(--green); }
+
+    #phone {
+      width: 390px;
+      height: 844px;
+      background: var(--bg);
+      border-radius: 48px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 18px 34px;
+      gap: 12px;
+      position: relative;
+      border: 1px solid rgba(100,180,80,0.1);
+      box-shadow:
+        0 0 0 1px rgba(100,180,80,0.03) inset,
+        0 60px 120px rgba(0,0,0,0.85),
+        0 0 80px rgba(100,180,80,0.04);
+    }
+
+    /* Subtle organic texture */
+    #phone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Radial forest light */
+    #phone::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(123,194,90,0.06) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      height: 44px;
+      position: relative;
+      z-index: 2;
+    }
+
+    #wordmark {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--green-light);
+    }
+
+    #status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--green-bg);
+      border: 1px solid var(--green-border);
+      border-radius: 30px;
+      padding: 6px 14px 6px 10px;
+    }
+
+    #status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: breathe 3.2s ease-in-out infinite;
+    }
+
+    @keyframes breathe {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    #status-text {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--green);
+      font-family: var(--mono);
+      letter-spacing: 0.08em;
+    }
+
+    #btn-power {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(232,130,106,0.07);
+      border: 1px solid rgba(232,130,106,0.18);
+      color: var(--danger);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      touch-action: manipulation;
+    }
+
+    #btn-power:active { background: rgba(232,130,106,0.18); transform: scale(0.92); }
+
+    #main {
+      flex: 1;
+      display: flex;
+      gap: 10px;
+      min-height: 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    #sliders {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 50px;
+      flex-shrink: 0;
+    }
+
+    .pill-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .pill-label {
+      font-size: 8px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      font-family: var(--mono);
+    }
+
+    .pill-track {
+      flex: 1;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 25px;
+      position: relative;
+      overflow: hidden;
+      cursor: ns-resize;
+      backdrop-filter: blur(8px);
+      transition: border-color 0.2s;
+    }
+
+    .pill-track:hover { border-color: var(--border-hi); }
+    .pill-track.dragging { border-color: rgba(123,194,90,0.4); }
+
+    .pill-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      border-radius: 25px;
+      transition: height 0.04s ease-out;
+    }
+
+    .pill-fill-vol {
+      background: linear-gradient(to top,
+        rgba(123,194,90,0.55) 0%,
+        rgba(123,194,90,0.12) 60%,
+        transparent 100%);
+    }
+
+    .pill-fill-spd {
+      background: linear-gradient(to top,
+        rgba(200,168,106,0.4) 0%,
+        rgba(200,168,106,0.08) 60%,
+        transparent 100%);
+    }
+
+    .pill-icon {
+      position: absolute;
+      top: 13px;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .pill-val {
+      position: absolute;
+      bottom: 9px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 8px;
+      font-weight: 500;
+      color: rgba(212,232,200,0.3);
+      font-family: var(--mono);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    #trackpad {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      position: relative;
+      overflow: hidden;
+      cursor: none;
+      transition: border-color 0.2s;
+    }
+
+    #trackpad.active { border-color: rgba(123,194,90,0.22); }
+
+    /* Organic dot grid */
+    #trackpad::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(123,194,90,0.12) 1px, transparent 1px);
+      background-size: 22px 22px;
+      pointer-events: none;
+    }
+
+    /* Soft vignette */
+    #trackpad::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 50%, rgba(13,26,9,0.4) 100%);
+      pointer-events: none;
+    }
+
+    #tp-hint {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 1;
+    }
+
+    #tp-hint svg { opacity: 0.1; }
+
+    #tp-hint span {
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-family: var(--mono);
+    }
+
+    #trackpad.active #tp-hint { opacity: 0; }
+
+    #cursor {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1.5px solid var(--green);
+      transform: translate(-50%, -50%) scale(0);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s;
+      pointer-events: none;
+      z-index: 3;
+      opacity: 0;
+    }
+
+    #trackpad.active #cursor {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0.8;
+    }
+
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(123,194,90,0.1);
+      border: 1px solid rgba(123,194,90,0.2);
+      width: 64px;
+      height: 64px;
+      margin-left: -32px;
+      margin-top: -32px;
+      animation: ripple-out 0.6s ease-out forwards;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    @keyframes ripple-out {
+      from { transform: scale(0.2); opacity: 1; }
+      to { transform: scale(2.8); opacity: 0; }
+    }
+
+    #click-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      flex-shrink: 0;
+      height: 78px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .click-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      color: var(--text);
+    }
+
+    .click-btn:hover { background: var(--surface-hi); border-color: var(--border-hi); }
+    .click-btn:active { transform: scale(0.95); border-color: rgba(123,194,90,0.35); }
+
+    .click-btn span {
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      font-family: var(--mono);
+    }
+
+    .click-btn svg { opacity: 0.4; transition: opacity 0.15s; }
+    .click-btn:hover svg, .click-btn:active svg { opacity: 0.7; }
+
+    @media (max-width: 500px) {
+      body { background: var(--bg); padding: 0; display: block; }
+      #phone { width: 100%; height: 100dvh; border-radius: 0; border: none; box-shadow: none; padding: 20px 16px env(safe-area-inset-bottom, 28px); }
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-link">← All concepts</a>
+
+  <div id="phone">
+    <div id="topbar">
+      <span id="wordmark">Moss</span>
+      <div id="status-pill">
+        <div id="status-dot"></div>
+        <span id="status-text">connected</span>
+      </div>
+      <button id="btn-power" title="Sleep Mac">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+          <line x1="12" y1="2" x2="12" y2="12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div id="main">
+      <div id="sliders">
+        <div class="pill-wrap">
+          <span class="pill-label">Vol</span>
+          <div class="pill-track" id="vol-track">
+            <div class="pill-fill pill-fill-vol" id="vol-fill" style="height:60%"></div>
+            <svg class="pill-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7bc25a" stroke-width="2" stroke-linecap="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+            <span class="pill-val" id="vol-val">60%</span>
+          </div>
+        </div>
+
+        <div class="pill-wrap">
+          <span class="pill-label">Spd</span>
+          <div class="pill-track" id="spd-track">
+            <div class="pill-fill pill-fill-spd" id="spd-fill" style="height:42%"></div>
+            <svg class="pill-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c8a86a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            <span class="pill-val" id="spd-val">2.2</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="trackpad">
+        <div id="tp-hint">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#7bc25a" stroke-width="1.2" stroke-linecap="round">
+            <rect x="5" y="2" width="14" height="20" rx="7"/>
+            <line x1="12" y1="2" x2="12" y2="9"/>
+          </svg>
+          <span>Tap to click</span>
+          <span>Drag to move</span>
+        </div>
+        <div id="cursor"></div>
+      </div>
+    </div>
+
+    <div id="click-row">
+      <button class="click-btn" id="btn-left">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <defs><clipPath id="lc9"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath></defs>
+          <rect x="5" y="2" width="14" height="20" rx="7"/>
+          <line x1="12" y1="2" x2="12" y2="10"/>
+          <line x1="5" y1="10" x2="19" y2="10"/>
+          <rect x="5" y="2" width="7" height="8" fill="currentColor" opacity="0.3" stroke="none" clip-path="url(#lc9)"/>
+        </svg>
+        <span>Left</span>
+      </button>
+      <button class="click-btn" id="btn-right">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <defs><clipPath id="rc9"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath></defs>
+          <rect x="5" y="2" width="14" height="20" rx="7"/>
+          <line x1="12" y1="2" x2="12" y2="10"/>
+          <line x1="5" y1="10" x2="19" y2="10"/>
+          <rect x="12" y="2" width="7" height="8" fill="currentColor" opacity="0.3" stroke="none" clip-path="url(#rc9)"/>
+        </svg>
+        <span>Right</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const tp = document.getElementById('trackpad');
+    const cursor = document.getElementById('cursor');
+
+    tp.addEventListener('mousemove', e => {
+      const r = tp.getBoundingClientRect();
+      cursor.style.left = (e.clientX - r.left) + 'px';
+      cursor.style.top = (e.clientY - r.top) + 'px';
+    });
+
+    tp.addEventListener('mouseenter', () => tp.classList.add('active'));
+    tp.addEventListener('mouseleave', () => tp.classList.remove('active'));
+
+    function addRipple(x, y) {
+      const d = document.createElement('div');
+      d.className = 'ripple';
+      d.style.left = x + 'px';
+      d.style.top = y + 'px';
+      tp.appendChild(d);
+      d.addEventListener('animationend', () => d.remove());
+    }
+
+    tp.addEventListener('click', e => {
+      const r = tp.getBoundingClientRect();
+      addRipple(e.clientX - r.left, e.clientY - r.top);
+    });
+
+    tp.addEventListener('touchstart', e => {
+      tp.classList.add('active');
+      const r = tp.getBoundingClientRect();
+      addRipple(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top);
+    }, { passive: true });
+
+    tp.addEventListener('touchend', () => tp.classList.remove('active'));
+
+    function makeSlider(trackId, fillId, valId, opts) {
+      const track = document.getElementById(trackId);
+      const fill = document.getElementById(fillId);
+      const label = document.getElementById(valId);
+      let dragging = false;
+
+      function getPct(clientY) {
+        const r = track.getBoundingClientRect();
+        return Math.max(0, Math.min(1, 1 - (clientY - r.top) / r.height));
+      }
+
+      function update(pct) {
+        fill.style.height = (pct * 100) + '%';
+        label.textContent = opts.format(pct);
+      }
+
+      track.addEventListener('mousedown', e => { dragging = true; track.classList.add('dragging'); update(getPct(e.clientY)); });
+      document.addEventListener('mousemove', e => { if (dragging) update(getPct(e.clientY)); });
+      document.addEventListener('mouseup', () => { dragging = false; track.classList.remove('dragging'); });
+      track.addEventListener('touchstart', e => { dragging = true; update(getPct(e.touches[0].clientY)); }, { passive: true });
+      document.addEventListener('touchmove', e => { if (dragging) update(getPct(e.touches[0].clientY)); }, { passive: true });
+      document.addEventListener('touchend', () => dragging = false);
+    }
+
+    makeSlider('vol-track', 'vol-fill', 'vol-val', { format: p => Math.round(p * 100) + '%' });
+    makeSlider('spd-track', 'spd-fill', 'spd-val', { format: p => (0.5 + p * 4.5).toFixed(1) });
+
+    document.querySelectorAll('.click-btn, #btn-power').forEach(btn => {
+      btn.addEventListener('touchstart', () => btn.style.transform = 'scale(0.94)', { passive: true });
+      btn.addEventListener('touchend', () => btn.style.transform = '');
+    });
+  </script>
+</body>
+</html>

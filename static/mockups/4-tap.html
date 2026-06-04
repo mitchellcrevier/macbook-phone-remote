@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Tap — Concept 04: Clay Tactile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #dbd5ca;
+      --bg-hi: #e4dfd8;
+      --surface: #dbd5ca;
+      --text: #3a342e;
+      --text-mid: #7a6e64;
+      --text-dim: #b0a89e;
+      --accent: #f4711e;
+      --accent-light: rgba(244,113,30,0.15);
+      --success: #6aab6a;
+      --shadow-dark: rgba(150,130,110,0.35);
+      --shadow-light: rgba(255,255,255,0.8);
+      --inset-shadow: inset 3px 3px 7px rgba(150,130,110,0.3), inset -3px -3px 7px rgba(255,255,255,0.75);
+      --outset-shadow: 5px 5px 12px rgba(150,130,110,0.3), -4px -4px 10px rgba(255,255,255,0.75);
+      --font: 'Nunito', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      background: #ccc5b8;
+      color: var(--text);
+      font-family: var(--font);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .back-link {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      transition: color 0.15s;
+      font-weight: 600;
+    }
+    .back-link:hover { color: var(--accent); }
+
+    #phone {
+      width: 390px;
+      height: 844px;
+      background: var(--bg);
+      border-radius: 48px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 22px 36px;
+      gap: 14px;
+      box-shadow:
+        8px 8px 20px rgba(140,120,100,0.3),
+        -6px -6px 16px rgba(255,255,255,0.75),
+        inset 0 1px 0 rgba(255,255,255,0.5);
+    }
+
+    /* Top bar */
+    #topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      height: 44px;
+    }
+
+    #wordmark {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+
+    .wordmark-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-left: 2px;
+      vertical-align: middle;
+      margin-bottom: 4px;
+    }
+
+    #conn-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg);
+      border-radius: 20px;
+      padding: 6px 12px 6px 8px;
+      box-shadow: var(--inset-shadow);
+    }
+
+    #conn-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 3px rgba(106,171,106,0.2);
+      animation: pulse-conn 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-conn {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(106,171,106,0.2); }
+      50%       { box-shadow: 0 0 0 5px rgba(106,171,106,0.08); }
+    }
+
+    #conn-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--success);
+      letter-spacing: 0.04em;
+    }
+
+    #btn-power {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: none;
+      color: #c05030;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--outset-shadow);
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #btn-power:active {
+      box-shadow: var(--inset-shadow);
+      color: var(--accent);
+    }
+
+    /* Main area: sliders + trackpad */
+    #main {
+      flex: 1;
+      display: flex;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    /* Vertical pill slider — neomorphic */
+    .v-slider-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      width: 44px;
+      flex-shrink: 0;
+    }
+
+    .v-slider-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .v-slider-track {
+      flex: 1;
+      width: 100%;
+      border-radius: 22px;
+      background: var(--bg);
+      box-shadow: var(--inset-shadow);
+      position: relative;
+      overflow: hidden;
+      cursor: ns-resize;
+    }
+
+    .v-slider-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      border-radius: 22px;
+      transition: height 0.05s ease-out;
+    }
+
+    .v-fill-vol {
+      background: linear-gradient(to top,
+        rgba(244,113,30,0.55) 0%,
+        rgba(244,113,30,0.12) 80%,
+        transparent 100%);
+    }
+
+    .v-fill-spd {
+      background: linear-gradient(to top,
+        rgba(58,52,46,0.2) 0%,
+        rgba(58,52,46,0.04) 80%,
+        transparent 100%);
+    }
+
+    .v-slider-icon {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .v-slider-val {
+      position: absolute;
+      bottom: 8px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--text-mid);
+      z-index: 2;
+      pointer-events: none;
+      letter-spacing: -0.01em;
+    }
+
+    /* Trackpad — raised neomorphic surface */
+    #trackpad {
+      flex: 1;
+      background: var(--bg);
+      border-radius: 26px;
+      position: relative;
+      overflow: hidden;
+      cursor: crosshair;
+      box-shadow:
+        var(--outset-shadow),
+        inset 0 1px 0 rgba(255,255,255,0.5);
+      transition: box-shadow 0.15s;
+    }
+
+    #trackpad.pressed {
+      box-shadow: var(--inset-shadow);
+    }
+
+    /* Subtle concentric rings texture */
+    #trackpad::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    #tp-hint {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    #tp-hint svg { opacity: 0.14; margin-bottom: 6px; }
+
+    #tp-hint p {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+    }
+
+    #trackpad.active #tp-hint { opacity: 0; }
+
+    /* Touch ripple */
+    .ripple-clay {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(244,113,30,0.12);
+      width: 80px;
+      height: 80px;
+      margin-left: -40px;
+      margin-top: -40px;
+      animation: ripple-c 0.55s ease-out forwards;
+      pointer-events: none;
+    }
+
+    @keyframes ripple-c {
+      from { transform: scale(0.1); opacity: 1; }
+      to   { transform: scale(2.5); opacity: 0; }
+    }
+
+    /* Click buttons — large pressable clay */
+    #click-row {
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      height: 80px;
+    }
+
+    .click-btn {
+      background: var(--bg);
+      border: none;
+      border-radius: 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      touch-action: manipulation;
+      box-shadow: var(--outset-shadow);
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      color: var(--text-mid);
+    }
+
+    .click-btn:hover {
+      box-shadow:
+        7px 7px 16px rgba(140,120,100,0.32),
+        -5px -5px 13px rgba(255,255,255,0.78);
+    }
+
+    .click-btn:active {
+      box-shadow: var(--inset-shadow);
+      color: var(--accent);
+    }
+
+    .click-btn span {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .click-btn svg {
+      opacity: 0.55;
+      transition: opacity 0.15s;
+    }
+
+    .click-btn:active svg { opacity: 0.9; }
+
+    @media (max-width: 500px) {
+      body { background: var(--bg); display: block; }
+      #phone {
+        width: 100%;
+        height: 100dvh;
+        border-radius: 0;
+        box-shadow: none;
+        padding: 20px 18px env(safe-area-inset-bottom, 32px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-link">← All concepts</a>
+
+  <div id="phone">
+    <div id="topbar">
+      <span id="wordmark">tap<span class="wordmark-dot"></span></span>
+      <div id="conn-badge">
+        <div id="conn-dot"></div>
+        <span id="conn-label">Online</span>
+      </div>
+      <button id="btn-power" title="Sleep Mac">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+          <line x1="12" y1="2" x2="12" y2="12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div id="main">
+      <!-- Volume slider -->
+      <div class="v-slider-wrap">
+        <span class="v-slider-label">Vol</span>
+        <div class="v-slider-track" id="vol-track">
+          <div class="v-slider-fill v-fill-vol" id="vol-fill" style="height:60%"></div>
+          <svg class="v-slider-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3a342e" stroke-width="2" stroke-linecap="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          </svg>
+          <span class="v-slider-val" id="vol-val">60%</span>
+        </div>
+      </div>
+
+      <!-- Trackpad -->
+      <div id="trackpad">
+        <div id="tp-hint">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3a342e" stroke-width="1.3" stroke-linecap="round">
+            <rect x="5" y="2" width="14" height="20" rx="7"/>
+            <line x1="12" y1="2" x2="12" y2="9"/>
+          </svg>
+          <p>Tap to click</p>
+          <p>Drag to move</p>
+        </div>
+      </div>
+
+      <!-- Speed slider -->
+      <div class="v-slider-wrap">
+        <span class="v-slider-label">Spd</span>
+        <div class="v-slider-track" id="spd-track">
+          <div class="v-slider-fill v-fill-spd" id="spd-fill" style="height:42%"></div>
+          <svg class="v-slider-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3a342e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+          <span class="v-slider-val" id="spd-val">2.2</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="click-row">
+      <button class="click-btn">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <defs><clipPath id="lc4"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath></defs>
+          <rect x="5" y="2" width="14" height="20" rx="7"/>
+          <line x1="12" y1="2" x2="12" y2="10"/>
+          <line x1="5" y1="10" x2="19" y2="10"/>
+          <rect x="5" y="2" width="7" height="8" fill="currentColor" opacity="0.28" stroke="none" clip-path="url(#lc4)"/>
+        </svg>
+        <span>Left</span>
+      </button>
+      <button class="click-btn">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <defs><clipPath id="rc4"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath></defs>
+          <rect x="5" y="2" width="14" height="20" rx="7"/>
+          <line x1="12" y1="2" x2="12" y2="10"/>
+          <line x1="5" y1="10" x2="19" y2="10"/>
+          <rect x="12" y="2" width="7" height="8" fill="currentColor" opacity="0.28" stroke="none" clip-path="url(#rc4)"/>
+        </svg>
+        <span>Right</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ── Trackpad ─────────────────────────────────────
+    const tp = document.getElementById('trackpad');
+
+    tp.addEventListener('mouseenter', () => tp.classList.add('active'));
+    tp.addEventListener('mouseleave', () => tp.classList.remove('active'));
+    tp.addEventListener('mousedown',  () => tp.classList.add('pressed'));
+    tp.addEventListener('mouseup',    () => tp.classList.remove('pressed'));
+
+    function addRipple(x, y) {
+      const d = document.createElement('div');
+      d.className = 'ripple-clay';
+      d.style.left = x + 'px';
+      d.style.top  = y + 'px';
+      tp.appendChild(d);
+      d.addEventListener('animationend', () => d.remove());
+    }
+
+    tp.addEventListener('click', e => {
+      const r = tp.getBoundingClientRect();
+      addRipple(e.clientX - r.left, e.clientY - r.top);
+    });
+
+    tp.addEventListener('touchstart', e => {
+      tp.classList.add('active', 'pressed');
+      const r = tp.getBoundingClientRect();
+      addRipple(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top);
+    }, { passive: true });
+
+    tp.addEventListener('touchend', () => tp.classList.remove('active', 'pressed'));
+
+    // ── Vertical sliders ──────────────────────────────
+    function makeVSlider(trackId, fillId, valId, fmt) {
+      const track = document.getElementById(trackId);
+      const fill  = document.getElementById(fillId);
+      const label = document.getElementById(valId);
+      let dragging = false;
+
+      function getPct(clientY) {
+        const r = track.getBoundingClientRect();
+        return Math.max(0, Math.min(1, 1 - (clientY - r.top) / r.height));
+      }
+
+      function update(pct) {
+        fill.style.height = (pct * 100) + '%';
+        label.textContent = fmt(pct);
+      }
+
+      track.addEventListener('mousedown', e => { dragging = true; update(getPct(e.clientY)); });
+      document.addEventListener('mousemove', e => { if (dragging) update(getPct(e.clientY)); });
+      document.addEventListener('mouseup', () => dragging = false);
+
+      track.addEventListener('touchstart', e => { dragging = true; update(getPct(e.touches[0].clientY)); }, { passive: true });
+      document.addEventListener('touchmove', e => { if (dragging) update(getPct(e.touches[0].clientY)); }, { passive: true });
+      document.addEventListener('touchend', () => dragging = false);
+    }
+
+    makeVSlider('vol-track', 'vol-fill', 'vol-val', p => Math.round(p * 100) + '%');
+    makeVSlider('spd-track', 'spd-fill', 'spd-val', p => (0.5 + p * 4.5).toFixed(1));
+
+    // ── Buttons ───────────────────────────────────────
+    document.querySelectorAll('.click-btn, #btn-power').forEach(btn => {
+      btn.addEventListener('touchstart', () => {
+        btn.style.boxShadow = 'inset 3px 3px 7px rgba(150,130,110,0.3), inset -3px -3px 7px rgba(255,255,255,0.75)';
+      }, { passive: true });
+      btn.addEventListener('touchend', () => {
+        btn.style.boxShadow = '';
+      });
+    });
+  </script>
+</body>
+</html>

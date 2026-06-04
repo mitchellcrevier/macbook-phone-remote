@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>MacD — Concept 03: Terminal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: rgba(63,185,80,0.18);
+      --border-dim: rgba(255,255,255,0.06);
+      --text: #c9d1d9;
+      --text-dim: #484f58;
+      --text-green: #3fb950;
+      --text-bright: #e6edf3;
+      --accent: #3fb950;
+      --accent-bg: rgba(63,185,80,0.08);
+      --danger: #f85149;
+      --font: 'JetBrains Mono', monospace;
+    }
+
+    html, body {
+      height: 100%;
+      background: #080d12;
+      color: var(--text);
+      font-family: var(--font);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .back-link {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: var(--accent); }
+
+    #phone {
+      width: 390px;
+      height: 844px;
+      background: var(--bg);
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      border: 1px solid var(--border);
+      box-shadow:
+        0 0 0 1px rgba(63,185,80,0.06) inset,
+        0 60px 120px rgba(0,0,0,0.7),
+        0 0 40px rgba(63,185,80,0.04);
+      position: relative;
+    }
+
+    /* Scan lines overlay */
+    #phone::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0,0,0,0.06) 3px,
+        rgba(0,0,0,0.06) 4px
+      );
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* Terminal chrome bar at top */
+    #chrome-bar {
+      background: #161b22;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .chrome-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .cd-red    { background: #f85149; }
+    .cd-yellow { background: #e3b341; }
+    .cd-green  { background: #3fb950; }
+
+    #chrome-title {
+      flex: 1;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+    }
+
+    /* Main content */
+    #content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 12px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* Prompt line */
+    #prompt-line {
+      flex-shrink: 0;
+      display: flex;
+      align-items: baseline;
+      gap: 0;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .p-user  { color: var(--accent); font-weight: 600; }
+    .p-sep   { color: var(--text-dim); }
+    .p-host  { color: #58a6ff; font-weight: 500; }
+    .p-path  { color: var(--text); }
+    .p-sym   { color: var(--accent); }
+
+    #conn-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+      padding: 8px 12px;
+      background: var(--accent-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    #conn-status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: blink-conn 1.8s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes blink-conn {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+
+    #conn-text {
+      font-size: 10.5px;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+
+    #btn-power {
+      margin-left: auto;
+      font-size: 10px;
+      color: var(--danger);
+      background: rgba(248,81,73,0.08);
+      border: 1px solid rgba(248,81,73,0.22);
+      border-radius: 4px;
+      padding: 3px 8px;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    #btn-power:active {
+      background: rgba(248,81,73,0.18);
+      transform: scale(0.95);
+    }
+
+    /* Trackpad with ASCII border */
+    #tp-outer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    #tp-header {
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #tp-mode {
+      color: var(--accent);
+      font-size: 9px;
+    }
+
+    #trackpad {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      position: relative;
+      overflow: hidden;
+      cursor: crosshair;
+      min-height: 0;
+    }
+
+    /* Corner decorations */
+    #trackpad::before {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border: 1px solid rgba(63,185,80,0.1);
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    .tp-corner {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      font-size: 10px;
+      color: rgba(63,185,80,0.35);
+      line-height: 1;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .tp-corner.tl { top: 4px; left: 4px; }
+    .tp-corner.tr { top: 4px; right: 4px; text-align: right; }
+    .tp-corner.bl { bottom: 4px; left: 4px; }
+    .tp-corner.br { bottom: 4px; right: 4px; text-align: right; }
+
+    #tp-hint {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+
+    #tp-hint p {
+      font-size: 9.5px;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+    }
+
+    #trackpad.active #tp-hint { opacity: 0; }
+
+    /* Blinking cursor */
+    #tp-cursor {
+      position: absolute;
+      width: 2px;
+      height: 14px;
+      background: var(--accent);
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 3;
+      animation: blink-cursor 0.8s step-end infinite;
+    }
+
+    #trackpad.active #tp-cursor { opacity: 1; }
+
+    @keyframes blink-cursor {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Sliders — horizontal terminal style */
+    #sliders {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .t-slider {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .t-label {
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+      width: 30px;
+      flex-shrink: 0;
+      text-transform: uppercase;
+    }
+
+    .t-track {
+      flex: 1;
+      height: 4px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 2px;
+      position: relative;
+      cursor: ew-resize;
+    }
+
+    .t-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.04s;
+    }
+
+    .t-thumb {
+      position: absolute;
+      top: 50%;
+      width: 10px;
+      height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: left 0.04s;
+      pointer-events: none;
+      box-shadow: 0 0 6px rgba(63,185,80,0.5);
+    }
+
+    .t-val {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-green);
+      width: 40px;
+      text-align: right;
+      flex-shrink: 0;
+      letter-spacing: 0.04em;
+    }
+
+    /* Divider line */
+    .t-divider {
+      height: 1px;
+      background: var(--border-dim);
+      margin: 0 -16px;
+      flex-shrink: 0;
+    }
+
+    /* Click buttons — keyboard style */
+    #click-row {
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      height: 64px;
+    }
+
+    .click-btn {
+      background: var(--surface);
+      border: 1px solid var(--border-dim);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: all 0.12s;
+      color: var(--text);
+      position: relative;
+    }
+
+    .click-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 5px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .click-btn:hover {
+      border-color: var(--border);
+      background: rgba(63,185,80,0.06);
+    }
+
+    .click-btn:active {
+      background: rgba(63,185,80,0.1);
+      transform: scale(0.97);
+      border-color: var(--border);
+    }
+
+    .btn-key {
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 0.14em;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 3px;
+      padding: 1px 5px;
+    }
+
+    .btn-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: 0.08em;
+    }
+
+    .click-btn svg { opacity: 0.4; }
+    .click-btn:hover svg { opacity: 0.7; }
+
+    @media (max-width: 500px) {
+      body { background: var(--bg); display: block; }
+      #phone {
+        width: 100%;
+        height: 100dvh;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-link">← index.html</a>
+
+  <div id="phone">
+    <!-- Terminal chrome bar -->
+    <div id="chrome-bar">
+      <div class="chrome-dot cd-red"></div>
+      <div class="chrome-dot cd-yellow"></div>
+      <div class="chrome-dot cd-green"></div>
+      <span id="chrome-title">mac-remote — zsh — 390×844</span>
+    </div>
+
+    <div id="content">
+      <!-- Prompt -->
+      <div id="prompt-line">
+        <span class="p-user">mitchellcrevier</span><span class="p-sep">@</span><span class="p-host">macbook-pro</span><span class="p-path"> ~/remote </span><span class="p-sym">$</span>&nbsp;
+        <span style="color:var(--text);font-size:11px;">mac-remote --connect</span>
+      </div>
+
+      <!-- Status line -->
+      <div id="conn-status">
+        <div id="conn-status-dot"></div>
+        <span id="conn-text">CONNECTED · 192.168.1.47:5050 · 12ms latency</span>
+        <button id="btn-power" title="Sleep Mac">SLEEP</button>
+      </div>
+
+      <!-- Trackpad -->
+      <div id="tp-outer">
+        <div id="tp-header">
+          <span>POINTER_SURFACE</span>
+          <span id="tp-mode">MOVE</span>
+        </div>
+        <div id="trackpad">
+          <span class="tp-corner tl">┌</span>
+          <span class="tp-corner tr">┐</span>
+          <span class="tp-corner bl">└</span>
+          <span class="tp-corner br">┘</span>
+
+          <div id="tp-hint">
+            <p>tap · drag · 2-finger scroll</p>
+            <p style="color:rgba(72,79,88,0.6);margin-top:2px;">drag to move cursor</p>
+          </div>
+
+          <div id="tp-cursor"></div>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="t-divider"></div>
+
+      <!-- Sliders -->
+      <div id="sliders">
+        <div class="t-slider">
+          <span class="t-label">VOL</span>
+          <div class="t-track" id="vol-track">
+            <div class="t-fill" id="vol-fill" style="width:60%"></div>
+            <div class="t-thumb" id="vol-thumb" style="left:60%"></div>
+          </div>
+          <span class="t-val" id="vol-val">60%</span>
+        </div>
+        <div class="t-slider">
+          <span class="t-label">SPD</span>
+          <div class="t-track" id="spd-track">
+            <div class="t-fill" id="spd-fill" style="width:38%"></div>
+            <div class="t-thumb" id="spd-thumb" style="left:38%"></div>
+          </div>
+          <span class="t-val" id="spd-val">2.2</span>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="t-divider"></div>
+
+      <!-- Click buttons -->
+      <div id="click-row">
+        <button class="click-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <defs><clipPath id="lt"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath></defs>
+            <rect x="5" y="2" width="14" height="20" rx="7"/>
+            <line x1="12" y1="2" x2="12" y2="10"/>
+            <line x1="5" y1="10" x2="19" y2="10"/>
+            <rect x="5" y="2" width="7" height="8" fill="currentColor" opacity="0.3" stroke="none" clip-path="url(#lt)"/>
+          </svg>
+          <span class="btn-label">LEFT_CLK</span>
+        </button>
+        <button class="click-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <defs><clipPath id="rt"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath></defs>
+            <rect x="5" y="2" width="14" height="20" rx="7"/>
+            <line x1="12" y1="2" x2="12" y2="10"/>
+            <line x1="5" y1="10" x2="19" y2="10"/>
+            <rect x="12" y="2" width="7" height="8" fill="currentColor" opacity="0.3" stroke="none" clip-path="url(#rt)"/>
+          </svg>
+          <span class="btn-label">RGHT_CLK</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Trackpad ─────────────────────────────────────
+    const tp = document.getElementById('trackpad');
+    const tpCursor = document.getElementById('tp-cursor');
+    const tpMode = document.getElementById('tp-mode');
+
+    tp.addEventListener('mousemove', e => {
+      const r = tp.getBoundingClientRect();
+      tpCursor.style.left = (e.clientX - r.left) + 'px';
+      tpCursor.style.top  = (e.clientY - r.top) + 'px';
+    });
+
+    tp.addEventListener('mouseenter', () => { tp.classList.add('active'); });
+    tp.addEventListener('mouseleave', () => { tp.classList.remove('active'); tpMode.textContent = 'MOVE'; });
+    tp.addEventListener('mousedown',  () => tpMode.textContent = 'DRAG');
+    tp.addEventListener('mouseup',    () => tpMode.textContent = 'MOVE');
+
+    tp.addEventListener('touchstart', e => {
+      tp.classList.add('active');
+      const r = tp.getBoundingClientRect();
+      tpCursor.style.left = (e.touches[0].clientX - r.left) + 'px';
+      tpCursor.style.top  = (e.touches[0].clientY - r.top) + 'px';
+      tpMode.textContent = e.touches.length >= 2 ? 'SCROLL' : 'MOVE';
+    }, { passive: true });
+
+    tp.addEventListener('touchend', () => { tp.classList.remove('active'); tpMode.textContent = 'MOVE'; });
+
+    // ── Horizontal sliders ────────────────────────────
+    function makeSlider(trackId, fillId, thumbId, valId, fmt) {
+      const track = document.getElementById(trackId);
+      const fill  = document.getElementById(fillId);
+      const thumb = document.getElementById(thumbId);
+      const label = document.getElementById(valId);
+      let dragging = false;
+
+      function getPct(clientX) {
+        const r = track.getBoundingClientRect();
+        return Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+      }
+
+      function update(pct) {
+        fill.style.width  = (pct * 100) + '%';
+        thumb.style.left  = (pct * 100) + '%';
+        label.textContent = fmt(pct);
+      }
+
+      track.addEventListener('mousedown', e => { dragging = true; update(getPct(e.clientX)); });
+      document.addEventListener('mousemove', e => { if (dragging) update(getPct(e.clientX)); });
+      document.addEventListener('mouseup', () => dragging = false);
+
+      track.addEventListener('touchstart', e => { dragging = true; update(getPct(e.touches[0].clientX)); }, { passive: true });
+      document.addEventListener('touchmove', e => { if (dragging) update(getPct(e.touches[0].clientX)); }, { passive: true });
+      document.addEventListener('touchend', () => dragging = false);
+    }
+
+    makeSlider('vol-track', 'vol-fill', 'vol-thumb', 'vol-val', p => Math.round(p * 100) + '%');
+    makeSlider('spd-track', 'spd-fill', 'spd-thumb', 'spd-val', p => (0.5 + p * 4.5).toFixed(1));
+
+    // ── Button feedback ───────────────────────────────
+    document.querySelectorAll('.click-btn, #btn-power').forEach(btn => {
+      btn.addEventListener('touchstart', () => btn.style.transform = 'scale(0.96)', { passive: true });
+      btn.addEventListener('touchend', () => btn.style.transform = '');
+    });
+  </script>
+</body>
+</html>

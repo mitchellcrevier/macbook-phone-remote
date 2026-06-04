@@ -5,546 +5,1070 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Mac Remote</title>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <style id="theme-style"></style>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg: #0d0d0d;
-      --surface: #181818;
-      --border: #2a2a2a;
-      --text: #e8e8e8;
-      --text-dim: #555;
-      --accent: #3b82f6;
-      --danger: #ef4444;
-      --btn-bg: #1e1e1e;
-      --btn-active: #2a2a2a;
-      --radius: 16px;
+    /* Settings panel — fixed, never replaced */
+    #settings-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0); z-index: 900;
+      pointer-events: none; transition: background 0.3s;
     }
-
-    html, body {
-      height: 100%;
-      width: 100%;
-      background: var(--bg);
-      color: var(--text);
+    #settings-overlay.open {
+      background: rgba(0,0,0,0.65); pointer-events: auto;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    }
+    #settings-sheet {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: #111113; border-radius: 24px 24px 0 0;
+      border-top: 1px solid rgba(255,255,255,0.07);
+      padding: 10px 16px max(24px, env(safe-area-inset-bottom, 24px));
+      display: flex; flex-direction: column; gap: 14px;
+      max-height: 86dvh;
+      transform: translateY(100%);
+      transition: transform 0.44s cubic-bezier(0.16,1,0.3,1);
+      box-shadow: 0 -32px 80px rgba(0,0,0,0.7);
+      will-change: transform;
+    }
+    #settings-overlay.open #settings-sheet { transform: translateY(0); }
+    #settings-drag-handle {
+      width: 36px; height: 4px; background: rgba(255,255,255,0.13);
+      border-radius: 2px; margin: 4px auto 0; flex-shrink: 0;
+    }
+    #settings-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; padding: 0 2px;
+    }
+    #settings-title {
+      font-size: 17px; font-weight: 600; color: #f4f4f5; letter-spacing: -0.015em;
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-      overflow: hidden;
+    }
+    #btn-settings-close {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: rgba(255,255,255,0.09); border: none;
+      color: rgba(255,255,255,0.45); display: flex; align-items: center;
+      justify-content: center; cursor: pointer; touch-action: manipulation;
+      transition: background 0.15s; flex-shrink: 0;
       -webkit-tap-highlight-color: transparent;
-      user-select: none;
-      touch-action: none;
     }
-
-    #app {
-      display: flex;
-      flex-direction: column;
-      height: 100dvh;
-      padding: 12px 12px 24px;
-      gap: 10px;
+    #btn-settings-close:active { background: rgba(255,255,255,0.16); }
+    #theme-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      overflow-y: auto; overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch; padding-bottom: 2px;
     }
-
-    /* ── Status bar ─────────────────────────────────────── */
-    #status-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 4px;
-      height: 36px;
-      flex-shrink: 0;
+    .theme-card {
+      border: 1.5px solid rgba(255,255,255,0.07); border-radius: 16px;
+      overflow: hidden; cursor: pointer; touch-action: manipulation;
+      background: #1c1c1e;
+      transition: border-color 0.22s, box-shadow 0.22s, transform 0.15s cubic-bezier(0.16,1,0.3,1);
+      -webkit-tap-highlight-color: transparent; position: relative;
     }
-
-    #status-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .theme-card:active { transform: scale(0.95); }
+    .theme-card.active {
+      border-color: var(--card-accent, rgba(255,255,255,0.4));
+      box-shadow: 0 0 0 1px var(--card-accent, rgba(255,255,255,0.4));
     }
-
-    #status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--text-dim);
-      transition: background 0.3s;
+    .theme-card-preview {
+      height: 76px; position: relative; display: flex;
+      align-items: center; justify-content: center; overflow: hidden;
     }
-
-    #status-dot.connected  { background: #22c55e; }
-    #status-dot.disconnected { background: var(--danger); }
-
-    #status-label {
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-dim);
+    .theme-card-check {
+      position: absolute; top: 8px; right: 8px; width: 19px; height: 19px;
+      border-radius: 50%; background: rgba(0,0,0,0.48);
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transform: scale(0.6);
+      transition: opacity 0.2s, transform 0.2s cubic-bezier(0.16,1,0.3,1);
     }
-
-    #btn-reconnect {
-      display: none;
-      font-size: 11px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--accent);
-      background: none;
-      border: 1px solid var(--accent);
-      border-radius: 6px;
-      padding: 3px 8px;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
+    .theme-card.active .theme-card-check { opacity: 1; transform: scale(1); }
+    .theme-card-info {
+      padding: 9px 12px 11px; background: #1c1c1e;
+      border-top: 1px solid rgba(255,255,255,0.05);
     }
-
-    /* Power button */
-    #btn-power {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: rgba(239, 68, 68, 0.12);
-      border: 1.5px solid rgba(239, 68, 68, 0.35);
-      color: var(--danger);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      touch-action: manipulation;
-      transition: background 0.15s, border-color 0.15s, transform 0.1s;
-      flex-shrink: 0;
+    .theme-card-name {
+      font-size: 13px; font-weight: 600; color: #e8e8ea; letter-spacing: -0.01em;
+      line-height: 1.2;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
     }
-
-    #btn-power:active, #btn-power.pressing {
-      background: rgba(239, 68, 68, 0.28);
-      border-color: var(--danger);
-      transform: scale(0.93);
-    }
-
-    /* ── Main section: sliders + trackpad ───────────────── */
-    #main-section {
-      flex: 1;
-      display: flex;
-      flex-direction: row;
-      gap: 10px;
-      min-height: 0;
-    }
-
-    /* Vertical pill sliders */
-    #side-sliders {
-      display: flex;
-      flex-direction: row;
-      gap: 8px;
-      flex-shrink: 0;
-      width: 96px;
-    }
-
-    .pill-wrap {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .pill-label {
-      font-size: 9px;
-      color: var(--text-dim);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      flex-shrink: 0;
-    }
-
-    .pill-slider {
-      flex: 1;
-      width: 100%;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      position: relative;
-      overflow: hidden;
-      touch-action: none;
-    }
-
-    .pill-fill {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(255, 255, 255, 0.22);
-      border-radius: 22px;
-      transition: height 0.06s ease-out;
-    }
-
-    .pill-icon {
-      position: absolute;
-      top: 14px;
-      left: 50%;
-      transform: translateX(-50%);
-      opacity: 0.3;
-      z-index: 2;
-      pointer-events: none;
-    }
-
-    .pill-val {
-      position: absolute;
-      bottom: 12px;
-      left: 0;
-      right: 0;
-      text-align: center;
-      font-size: 10px;
-      font-weight: 500;
-      color: var(--text-dim);
-      letter-spacing: 0.02em;
-      z-index: 2;
-      pointer-events: none;
-    }
-
-    /* ── Trackpad ────────────────────────────────────────── */
-    #trackpad {
-      flex: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      position: relative;
-      overflow: hidden;
-      cursor: none;
-    }
-
-    #trackpad::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: radial-gradient(circle at center, rgba(255,255,255,0.025) 0%, transparent 70%);
-      pointer-events: none;
-    }
-
-    #trackpad-hint {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      pointer-events: none;
-      transition: opacity 0.3s;
-    }
-
-    #trackpad-hint span {
-      font-size: 11px;
-      color: var(--text-dim);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      text-align: center;
-      line-height: 1;
-    }
-
-    .trackpad-active #trackpad-hint { opacity: 0; }
-
-    /* Ripple */
-    .ripple {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.08);
-      width: 60px;
-      height: 60px;
-      margin-left: -30px;
-      margin-top: -30px;
-      animation: ripple-out 0.4s ease-out forwards;
-      pointer-events: none;
-    }
-
-    @keyframes ripple-out {
-      from { transform: scale(0); opacity: 1; }
-      to   { transform: scale(2.5); opacity: 0; }
-    }
-
-    /* Scroll mode overlay */
-    #scroll-badge {
-      position: absolute;
-      top: 12px;
-      right: 14px;
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--accent);
-      opacity: 0;
-      transition: opacity 0.2s;
-      pointer-events: none;
-    }
-
-    .scroll-mode #scroll-badge { opacity: 1; }
-
-    /* ── Button row ──────────────────────────────────────── */
-    #buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      flex-shrink: 0;
-      height: 72px;
-    }
-
-    .btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: var(--btn-bg);
-      color: var(--text);
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      transition: background 0.1s, transform 0.1s, border-color 0.1s;
-      touch-action: manipulation;
-    }
-
-    .btn:active, .btn.pressing {
-      background: var(--btn-active);
-      transform: scale(0.96);
+    .theme-card-tag {
+      font-size: 10px; color: rgba(255,255,255,0.28); margin-top: 2px;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
     }
   </style>
 </head>
 <body>
-  <div id="app">
+  <div id="theme-root"></div>
 
-    <div id="status-bar">
-      <div id="status-left">
-        <div id="status-dot"></div>
-        <span id="status-label">Mac Remote</span>
-        <button id="btn-reconnect">Reconnect</button>
+  <div id="settings-overlay">
+    <div id="settings-sheet">
+      <div id="settings-drag-handle"></div>
+      <div id="settings-header">
+        <span id="settings-title">Appearance</span>
+        <button id="btn-settings-close">
+          <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <line x1="1" y1="1" x2="8" y2="8"/><line x1="8" y1="1" x2="1" y2="8"/>
+          </svg>
+        </button>
       </div>
-      <button id="btn-power">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-          <line x1="12" y1="2" x2="12" y2="12"/>
-        </svg>
-      </button>
+      <div id="theme-grid"></div>
     </div>
-
-    <div id="main-section">
-
-      <div id="side-sliders">
-        <!-- Speed -->
-        <div class="pill-wrap">
-          <span class="pill-label">Spd</span>
-          <div class="pill-slider" id="speed-pill">
-            <div class="pill-fill" id="speed-fill"></div>
-            <svg class="pill-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-            </svg>
-            <span class="pill-val" id="speed-val">2.2</span>
-          </div>
-        </div>
-
-        <!-- Volume -->
-        <div class="pill-wrap">
-          <span class="pill-label">Vol</span>
-          <div class="pill-slider" id="volume-pill">
-            <div class="pill-fill" id="volume-fill"></div>
-            <svg class="pill-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-            </svg>
-            <span class="pill-val" id="volume-val">50%</span>
-          </div>
-        </div>
-      </div>
-
-      <div id="trackpad">
-        <div id="trackpad-hint">
-          <span>Tap to click</span>
-          <span>Drag to move</span>
-          <span>Two finger scroll</span>
-        </div>
-        <div id="scroll-badge">Scroll</div>
-      </div>
-
-    </div>
-
-    <div id="buttons">
-      <!-- Left click -->
-      <button class="btn" id="btn-left">
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <defs>
-            <clipPath id="mc-l"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath>
-          </defs>
-          <rect x="5" y="2" width="14" height="20" rx="7"/>
-          <line x1="12" y1="2" x2="12" y2="10"/>
-          <line x1="5" y1="10" x2="19" y2="10"/>
-          <rect x="5" y="2" width="7" height="8" fill="currentColor" opacity="0.35" stroke="none" clip-path="url(#mc-l)"/>
-          <circle cx="12" cy="6" r="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/>
-        </svg>
-      </button>
-
-      <!-- Right click -->
-      <button class="btn" id="btn-right">
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <defs>
-            <clipPath id="mc-r"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath>
-          </defs>
-          <rect x="5" y="2" width="14" height="20" rx="7"/>
-          <line x1="12" y1="2" x2="12" y2="10"/>
-          <line x1="5" y1="10" x2="19" y2="10"/>
-          <rect x="12" y="2" width="7" height="8" fill="currentColor" opacity="0.35" stroke="none" clip-path="url(#mc-r)"/>
-          <circle cx="12" cy="6" r="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/>
-        </svg>
-      </button>
-    </div>
-
   </div>
 
-  <script>
-    const socket = io({ transports: ['websocket'] });
+<script>
+// ── Socket ────────────────────────────────────────────────────
+const socket = io({ transports: ['websocket'] });
 
-    const dot = document.getElementById('status-dot');
-    const trackpad = document.getElementById('trackpad');
-    const reconnectBtn = document.getElementById('btn-reconnect');
+// ── Global state ──────────────────────────────────────────────
+const SPEED_MIN = 0.5, SPEED_MAX = 5.0;
+let sensitivity = 2.2;
+let currentVolume = 50;
+let activeFontLink = null;
 
-    socket.on('connect', () => {
-      dot.className = 'connected';
-      reconnectBtn.style.display = 'none';
-    });
-    socket.on('disconnect', () => {
-      dot.className = 'disconnected';
-      reconnectBtn.style.display = 'block';
-    });
+// ── Socket status ─────────────────────────────────────────────
+function refreshStatus() {
+  const dot  = document.getElementById('status-dot');
+  const txt  = document.getElementById('status-text');
+  const lbl  = document.getElementById('status-label');
+  const rcn  = document.getElementById('btn-reconnect');
+  if (!dot) return;
+  const conn = socket.connected;
+  dot.className = conn ? 'connected' : 'disconnected';
+  if (txt) txt.textContent = conn ? 'LIVE'    : 'OFFLINE';
+  if (lbl) lbl.textContent = conn ? 'live'    : 'offline';
+  if (rcn) rcn.style.display = conn ? 'none'  : 'flex';
+}
+socket.on('connect',    refreshStatus);
+socket.on('disconnect', refreshStatus);
 
-    reconnectBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      reconnectBtn.textContent = '...';
-      socket.connect();
-    });
+// ── Vertical pill slider ───────────────────────────────────────
+function setupVertSlider(trackId, fillId, valId, { toValue, toPct, format, onCommit }) {
+  const track = document.getElementById(trackId);
+  const fill  = document.getElementById(fillId);
+  const label = document.getElementById(valId);
+  if (!track || !fill || !label) return;
+  let timer = null;
 
-    // ── Power button ─────────────────────────────────────────
-    const powerBtn = document.getElementById('btn-power');
+  function setPct(pct) {
+    pct = Math.max(0, Math.min(1, pct));
+    fill.style.height = (pct * 100) + '%';
+    const val = toValue(pct);
+    label.textContent = format(val);
+    clearTimeout(timer);
+    timer = setTimeout(() => onCommit(val), 60);
+  }
+
+  function fromTouch(e) {
+    const r = track.getBoundingClientRect();
+    return 1 - (e.touches[0].clientY - r.top) / r.height;
+  }
+
+  track.addEventListener('touchstart', (e) => { e.preventDefault(); setPct(fromTouch(e)); }, { passive: false });
+  track.addEventListener('touchmove',  (e) => { e.preventDefault(); setPct(fromTouch(e)); }, { passive: false });
+  fill.style.height = (toPct() * 100) + '%';
+}
+
+// ── Horizontal slider (Ctrl only) ─────────────────────────────
+function setupHorizSlider(trackId, fillId, thumbId, valId, { toValue, toPct, format, onCommit }) {
+  const track = document.getElementById(trackId);
+  const fill  = document.getElementById(fillId);
+  const thumb = document.getElementById(thumbId);
+  const label = document.getElementById(valId);
+  if (!track || !fill || !label) return;
+  let timer = null;
+
+  function setPct(pct) {
+    pct = Math.max(0, Math.min(1, pct));
+    const p = (pct * 100) + '%';
+    fill.style.width = p;
+    if (thumb) thumb.style.left = p;
+    const val = toValue(pct);
+    label.textContent = format(val);
+    clearTimeout(timer);
+    timer = setTimeout(() => onCommit(val), 60);
+  }
+
+  function fromTouch(e) {
+    const r = track.getBoundingClientRect();
+    return (e.touches[0].clientX - r.left) / r.width;
+  }
+
+  track.addEventListener('touchstart', (e) => { e.preventDefault(); setPct(fromTouch(e)); }, { passive: false });
+  track.addEventListener('touchmove',  (e) => { e.preventDefault(); setPct(fromTouch(e)); }, { passive: false });
+  const init = (toPct() * 100) + '%';
+  fill.style.width = init;
+  if (thumb) thumb.style.left = init;
+}
+
+// ── Trackpad ──────────────────────────────────────────────────
+function setupTrackpad() {
+  const tp = document.getElementById('trackpad');
+  if (!tp) return;
+  let lastX = null, lastY = null, startX = null, startY = null;
+  let hasMoved = false, isScrolling = false;
+  const THRESH = 8;
+
+  function addRipple(x, y) {
+    const r = document.createElement('div');
+    r.className = 'ripple';
+    r.style.left = x + 'px'; r.style.top = y + 'px';
+    tp.appendChild(r);
+    r.addEventListener('animationend', () => r.remove());
+  }
+
+  tp.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    isScrolling = e.touches.length >= 2; hasMoved = false;
+    const t = e.touches[0];
+    lastX = startX = t.clientX; lastY = startY = t.clientY;
+    tp.classList.add('trackpad-active');
+    if (isScrolling) {
+      tp.classList.add('scroll-mode');
+    } else {
+      const r = tp.getBoundingClientRect();
+      addRipple(t.clientX - r.left, t.clientY - r.top);
+    }
+  }, { passive: false });
+
+  tp.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (e.touches.length >= 2 || isScrolling) {
+      tp.classList.add('scroll-mode'); isScrolling = true; hasMoved = true;
+      const t = e.touches[0];
+      socket.emit('scroll', { dx: (t.clientX - lastX) * sensitivity * 0.4, dy: (t.clientY - lastY) * sensitivity * 0.4 });
+      lastX = t.clientX; lastY = t.clientY; return;
+    }
+    const t = e.touches[0];
+    if (Math.abs(t.clientX - startX) > THRESH || Math.abs(t.clientY - startY) > THRESH) hasMoved = true;
+    const dx = (t.clientX - lastX) * sensitivity;
+    const dy = (t.clientY - lastY) * sensitivity;
+    if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) socket.emit('mousemove', { dx: Math.round(dx), dy: Math.round(dy) });
+    lastX = t.clientX; lastY = t.clientY;
+  }, { passive: false });
+
+  tp.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    if (e.touches.length === 0) {
+      if (!hasMoved && !isScrolling) { socket.emit('leftclick'); navigator.vibrate?.(8); }
+      lastX = lastY = startX = startY = null; hasMoved = isScrolling = false;
+      tp.classList.remove('trackpad-active', 'scroll-mode');
+    }
+  }, { passive: false });
+}
+
+// ── Shared init (power, settings, reconnect, click buttons) ───
+function initShared() {
+  refreshStatus();
+
+  const powerBtn = document.getElementById('btn-power');
+  if (powerBtn) {
     powerBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
       powerBtn.classList.add('pressing');
-      socket.emit('sleep');
-      navigator.vibrate?.(12);
+      socket.emit('sleep'); navigator.vibrate?.(12);
       setTimeout(() => powerBtn.classList.remove('pressing'), 200);
-    });
-
-    // ── Pill sliders ─────────────────────────────────────────
-    const SPEED_MIN = 0.5, SPEED_MAX = 5.0;
-    let sensitivity = 2.2;
-
-    function makePillSlider(pillId, fillId, valId, { toValue, toPct, format, onCommit }) {
-      const pill = document.getElementById(pillId);
-      const fill = document.getElementById(fillId);
-      const label = document.getElementById(valId);
-      let timer = null;
-
-      function setPct(pct) {
-        pct = Math.max(0, Math.min(1, pct));
-        fill.style.height = (pct * 100) + '%';
-        const val = toValue(pct);
-        label.textContent = format(val);
-        clearTimeout(timer);
-        timer = setTimeout(() => onCommit(val), 60);
-      }
-
-      function pctFromTouch(e) {
-        const rect = pill.getBoundingClientRect();
-        return 1 - (e.touches[0].clientY - rect.top) / rect.height;
-      }
-
-      pill.addEventListener('touchstart', (e) => { e.preventDefault(); setPct(pctFromTouch(e)); }, { passive: false });
-      pill.addEventListener('touchmove',  (e) => { e.preventDefault(); setPct(pctFromTouch(e)); }, { passive: false });
-
-      fill.style.height = (toPct() * 100) + '%';
-    }
-
-    makePillSlider('speed-pill', 'speed-fill', 'speed-val', {
-      toValue: (p) => SPEED_MIN + p * (SPEED_MAX - SPEED_MIN),
-      toPct:   ()  => (sensitivity - SPEED_MIN) / (SPEED_MAX - SPEED_MIN),
-      format:  (v) => v.toFixed(1),
-      onCommit:(v) => { sensitivity = v; },
-    });
-
-    let currentVolume = 50;
-    makePillSlider('volume-pill', 'volume-fill', 'volume-val', {
-      toValue: (p) => Math.round(p * 100),
-      toPct:   ()  => currentVolume / 100,
-      format:  (v) => v + '%',
-      onCommit:(v) => { currentVolume = v; socket.emit('volume', { level: v }); },
-    });
-
-    fetch('/volume').then(r => r.json()).then(d => {
-      currentVolume = d.level;
-      document.getElementById('volume-fill').style.height = d.level + '%';
-      document.getElementById('volume-val').textContent = d.level + '%';
-    }).catch(() => {});
-
-    // ── Trackpad ─────────────────────────────────────────────
-    let lastX = null, lastY = null, startX = null, startY = null;
-    let hasMoved = false, isScrolling = false;
-    const TAP_THRESHOLD = 8;
-
-    function addRipple(x, y) {
-      const r = document.createElement('div');
-      r.className = 'ripple';
-      r.style.left = x + 'px';
-      r.style.top = y + 'px';
-      trackpad.appendChild(r);
-      r.addEventListener('animationend', () => r.remove());
-    }
-
-    trackpad.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      isScrolling = e.touches.length >= 2;
-      hasMoved = false;
-      const t = e.touches[0];
-      lastX = startX = t.clientX;
-      lastY = startY = t.clientY;
-      if (isScrolling) {
-        trackpad.classList.add('scroll-mode');
-      } else {
-        const rect = trackpad.getBoundingClientRect();
-        addRipple(t.clientX - rect.left, t.clientY - rect.top);
-      }
-      trackpad.classList.add('trackpad-active');
     }, { passive: false });
+  }
 
-    trackpad.addEventListener('touchmove', (e) => {
+  const settingsBtn = document.getElementById('btn-settings');
+  if (settingsBtn) {
+    settingsBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      if (e.touches.length >= 2 || isScrolling) {
-        trackpad.classList.add('scroll-mode');
-        isScrolling = true;
-        hasMoved = true;
-        const t = e.touches[0];
-        const dx = (t.clientX - lastX) * sensitivity * 0.4;
-        const dy = (t.clientY - lastY) * sensitivity * 0.4;
-        socket.emit('scroll', { dx, dy });
-        lastX = t.clientX;
-        lastY = t.clientY;
-        return;
-      }
-      const t = e.touches[0];
-      if (Math.abs(t.clientX - startX) > TAP_THRESHOLD || Math.abs(t.clientY - startY) > TAP_THRESHOLD) hasMoved = true;
-      const dx = (t.clientX - lastX) * sensitivity;
-      const dy = (t.clientY - lastY) * sensitivity;
-      if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) socket.emit('mousemove', { dx: Math.round(dx), dy: Math.round(dy) });
-      lastX = t.clientX;
-      lastY = t.clientY;
+      settingsBtn.classList.add('pressing');
+      openSettings();
+      setTimeout(() => settingsBtn.classList.remove('pressing'), 150);
     }, { passive: false });
+    settingsBtn.addEventListener('click', openSettings);
+  }
 
-    trackpad.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      if (e.touches.length === 0) {
-        if (!hasMoved && !isScrolling) { socket.emit('leftclick'); navigator.vibrate?.(8); }
-        lastX = lastY = startX = startY = null;
-        hasMoved = false;
-        isScrolling = false;
-        trackpad.classList.remove('trackpad-active', 'scroll-mode');
+  const reconnBtn = document.getElementById('btn-reconnect');
+  if (reconnBtn) {
+    reconnBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault(); reconnBtn.textContent = '...'; socket.connect();
+    }, { passive: false });
+  }
+
+  function pressBtn(el, event) {
+    el.classList.add('pressing'); socket.emit(event); navigator.vibrate?.(8);
+    setTimeout(() => el.classList.remove('pressing'), 150);
+  }
+  const btnL = document.getElementById('btn-left');
+  const btnR = document.getElementById('btn-right');
+  if (btnL) btnL.addEventListener('touchstart', (e) => { e.preventDefault(); pressBtn(btnL, 'leftclick'); }, { passive: false });
+  if (btnR) btnR.addEventListener('touchstart', (e) => { e.preventDefault(); pressBtn(btnR, 'rightclick'); }, { passive: false });
+
+  setupTrackpad();
+}
+
+// ── Common init (vertical sliders) ────────────────────────────
+function initCommon() {
+  initShared();
+  setupVertSlider('vol-slider', 'vol-fill', 'vol-val', {
+    toValue: p => Math.round(p * 100),
+    toPct:   () => currentVolume / 100,
+    format:  v => v + '%',
+    onCommit: v => {
+      currentVolume = v; socket.emit('volume', { level: v });
+      ['r-vol','m-vol'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = v; });
+    },
+  });
+  setupVertSlider('spd-slider', 'spd-fill', 'spd-val', {
+    toValue: p => SPEED_MIN + p * (SPEED_MAX - SPEED_MIN),
+    toPct:   () => (sensitivity - SPEED_MIN) / (SPEED_MAX - SPEED_MIN),
+    format:  v => v.toFixed(1),
+    onCommit: v => {
+      sensitivity = v;
+      ['r-spd','m-spd'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = v.toFixed(1); });
+    },
+  });
+}
+
+// ── Ctrl init (horizontal sliders) ────────────────────────────
+function initCtrl() {
+  initShared();
+  setupHorizSlider('vol-slider', 'vol-fill', 'vol-thumb', 'vol-val', {
+    toValue: p => Math.round(p * 100),
+    toPct:   () => currentVolume / 100,
+    format:  v => v + '%',
+    onCommit: v => { currentVolume = v; socket.emit('volume', { level: v }); },
+  });
+  setupHorizSlider('spd-slider', 'spd-fill', 'spd-thumb', 'spd-val', {
+    toValue: p => SPEED_MIN + p * (SPEED_MAX - SPEED_MIN),
+    toPct:   () => (sensitivity - SPEED_MIN) / (SPEED_MAX - SPEED_MIN),
+    format:  v => v.toFixed(1),
+    onCommit: v => { sensitivity = v; },
+  });
+}
+
+// ── HTML helpers ──────────────────────────────────────────────
+const SI = `<svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="4.5" cy="4.5" r="2" fill="currentColor"/><circle cx="11.5" cy="4.5" r="2" fill="currentColor"/><circle cx="4.5" cy="11.5" r="2" fill="currentColor"/><circle cx="11.5" cy="11.5" r="2" fill="currentColor"/></svg>`;
+const PI = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>`;
+const LCI = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><defs><clipPath id="lc"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath></defs><rect x="5" y="2" width="14" height="20" rx="7"/><line x1="12" y1="2" x2="12" y2="10"/><line x1="5" y1="10" x2="19" y2="10"/><rect x="5" y="2" width="7" height="8" fill="currentColor" opacity="0.3" stroke="none" clip-path="url(#lc)"/></svg>`;
+const RCI = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><defs><clipPath id="rc"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath></defs><rect x="5" y="2" width="14" height="20" rx="7"/><line x1="12" y1="2" x2="12" y2="10"/><line x1="5" y1="10" x2="19" y2="10"/><rect x="12" y="2" width="7" height="8" fill="currentColor" opacity="0.3" stroke="none" clip-path="url(#rc)"/></svg>`;
+
+function stdPills() {
+  return `<div id="sliders">
+    <div class="pill-wrap">
+      <span class="pill-label">Vol</span>
+      <div class="pill-slider" id="vol-slider">
+        <div class="pill-fill" id="vol-fill"></div>
+        <svg class="pill-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        <span class="pill-val" id="vol-val">50%</span>
+      </div>
+    </div>
+    <div class="pill-wrap">
+      <span class="pill-label">Spd</span>
+      <div class="pill-slider" id="spd-slider">
+        <div class="pill-fill" id="spd-fill"></div>
+        <svg class="pill-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        <span class="pill-val" id="spd-val">2.2</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function stdTp() {
+  return `<div id="trackpad">
+    <div id="trackpad-hint"><span>Tap to click</span><span>Drag to move</span><span>Two finger scroll</span></div>
+    <div id="scroll-badge">Scroll</div>
+  </div>`;
+}
+
+function stdTopbar(name, statusWord, extra = '') {
+  return `<div id="topbar">
+    <span id="wordmark">${name}</span>
+    <div id="status-pill"><div id="status-dot"></div><span id="status-text">${statusWord}</span></div>
+    <div class="topbar-right">
+      <button id="btn-reconnect">retry</button>
+      ${extra}
+      <button id="btn-settings">${SI}</button>
+      <button id="btn-power">${PI}</button>
+    </div>
+  </div>`;
+}
+
+function stdLayout(name, statusWord, pre = '', post = '') {
+  return `<div id="app">
+    ${stdTopbar(name, statusWord)}
+    ${pre}
+    <div id="main">${stdPills()}${stdTp()}</div>
+    ${post}
+    <div id="click-row">
+      <button class="btn" id="btn-left">${LCI}<span class="btn-lbl">Left</span></button>
+      <button class="btn" id="btn-right">${RCI}<span class="btn-lbl">Right</span></button>
+    </div>
+  </div>`;
+}
+
+// ── Base CSS shared across all themes ─────────────────────────
+const BASE = `
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;touch-action:none;}
+  #app{display:flex;flex-direction:column;height:100dvh;}
+  .trackpad-active #trackpad-hint{opacity:0;}
+  .scroll-mode #scroll-badge{opacity:1;}
+  #trackpad-hint{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;pointer-events:none;transition:opacity 0.3s;z-index:1;}
+  #scroll-badge{position:absolute;top:12px;right:14px;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+  .ripple{position:absolute;border-radius:50%;width:60px;height:60px;margin-left:-30px;margin-top:-30px;animation:ripple-out 0.4s ease-out forwards;pointer-events:none;}
+  @keyframes ripple-out{from{transform:scale(0);opacity:1;}to{transform:scale(2.5);opacity:0;}}
+  #status-dot.connected{background:#22c55e!important;animation:none!important;}
+  #status-dot.disconnected{background:#ef4444!important;animation:none!important;}
+  #btn-reconnect{display:none;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .pressing{transform:scale(0.94)!important;}
+`;
+
+// Standard layout CSS shared across relay-family themes
+const STD = `
+  #app{padding:20px 18px 32px;gap:12px;}
+  #topbar{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;height:44px;}
+  .topbar-right{display:flex;align-items:center;gap:8px;}
+  #main{flex:1;display:flex;gap:10px;min-height:0;}
+  #sliders{display:flex;flex-direction:column;gap:8px;width:50px;flex-shrink:0;}
+  .pill-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .pill-label{font-size:8px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;}
+  .pill-slider{flex:1;width:100%;border-radius:25px;position:relative;overflow:hidden;cursor:ns-resize;}
+  .pill-fill{position:absolute;bottom:0;left:0;right:0;border-radius:25px;transition:height 0.06s ease-out;}
+  .pill-icon{position:absolute;top:13px;left:50%;transform:translateX(-50%);opacity:0.18;pointer-events:none;z-index:2;}
+  .pill-val{position:absolute;bottom:9px;left:0;right:0;text-align:center;font-size:9px;font-weight:500;pointer-events:none;z-index:2;}
+  #trackpad{flex:1;border-radius:20px;position:relative;overflow:hidden;cursor:none;}
+  #click-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex-shrink:0;height:78px;}
+  .btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:18px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:all 0.15s cubic-bezier(0.16,1,0.3,1);}
+  .btn-lbl{font-size:9px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;}
+`;
+
+// ── THEMES ────────────────────────────────────────────────────
+const THEMES = [
+  // ── 1. Default ───────────────────────────────────────────
+  {
+    id:'default', name:'Default', tag:'System Dark',
+    accent:'#3b82f6', preview:'linear-gradient(135deg,#0d0d0d 0%,#1a1a2e 100%)', light:false, font:null,
+    init: initCommon,
+    css: BASE + `
+      html,body{background:#0d0d0d;color:#e8e8e8;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;}
+      #app{padding:12px 12px 24px;gap:10px;}
+      #status-bar{display:flex;align-items:center;justify-content:space-between;padding:0 4px;height:36px;flex-shrink:0;}
+      #status-left{display:flex;align-items:center;gap:8px;}
+      #status-right{display:flex;align-items:center;gap:8px;}
+      #status-dot{width:7px;height:7px;border-radius:50%;background:#555;transition:background 0.3s;}
+      #status-label{font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#555;}
+      #btn-reconnect{font-size:11px;color:#3b82f6;background:none;border:1px solid #3b82f6;border-radius:6px;padding:3px 8px;}
+      #btn-settings,#btn-power{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;transition:all 0.15s;flex-shrink:0;}
+      #btn-settings{background:#1e1e1e;border:1.5px solid #2a2a2a;color:#555;}
+      #btn-power{background:rgba(239,68,68,0.12);border:1.5px solid rgba(239,68,68,0.35);color:#ef4444;}
+      #main-section{flex:1;display:flex;gap:10px;min-height:0;}
+      #side-sliders{display:flex;flex-direction:row;gap:8px;width:96px;flex-shrink:0;}
+      .pill-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
+      .pill-label{font-size:9px;color:#555;letter-spacing:0.1em;text-transform:uppercase;flex-shrink:0;}
+      .pill-slider{flex:1;width:100%;background:#181818;border:1px solid #2a2a2a;border-radius:22px;position:relative;overflow:hidden;touch-action:none;}
+      .pill-fill{position:absolute;bottom:0;left:0;right:0;background:rgba(255,255,255,0.22);border-radius:22px;transition:height 0.06s ease-out;}
+      .pill-icon{position:absolute;top:14px;left:50%;transform:translateX(-50%);opacity:0.3;z-index:2;pointer-events:none;}
+      .pill-val{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:10px;font-weight:500;color:#555;z-index:2;pointer-events:none;}
+      #trackpad{flex:1;background:#181818;border:1px solid #2a2a2a;border-radius:16px;position:relative;overflow:hidden;cursor:none;}
+      #trackpad-hint span{font-size:11px;color:#555;letter-spacing:0.06em;text-transform:uppercase;}
+      #scroll-badge{color:#3b82f6;}
+      .ripple{background:rgba(255,255,255,0.08);}
+      #buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex-shrink:0;height:72px;}
+      .btn{display:flex;align-items:center;justify-content:center;border-radius:14px;border:1px solid #2a2a2a;background:#1e1e1e;color:#e8e8e8;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all 0.1s;touch-action:manipulation;}
+    `,
+    html: `<div id="app">
+      <div id="status-bar">
+        <div id="status-left">
+          <div id="status-dot"></div>
+          <span id="status-label">Mac Remote</span>
+          <button id="btn-reconnect">Reconnect</button>
+        </div>
+        <div id="status-right">
+          <button id="btn-settings">${SI}</button>
+          <button id="btn-power">${PI}</button>
+        </div>
+      </div>
+      <div id="main-section">
+        <div id="side-sliders">
+          <div class="pill-wrap">
+            <span class="pill-label">Spd</span>
+            <div class="pill-slider" id="spd-slider">
+              <div class="pill-fill" id="spd-fill"></div>
+              <svg class="pill-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              <span class="pill-val" id="spd-val">2.2</span>
+            </div>
+          </div>
+          <div class="pill-wrap">
+            <span class="pill-label">Vol</span>
+            <div class="pill-slider" id="vol-slider">
+              <div class="pill-fill" id="vol-fill"></div>
+              <svg class="pill-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              <span class="pill-val" id="vol-val">50%</span>
+            </div>
+          </div>
+        </div>
+        <div id="trackpad">
+          <div id="trackpad-hint"><span>Tap to click</span><span>Drag to move</span><span>Two finger scroll</span></div>
+          <div id="scroll-badge">Scroll</div>
+        </div>
+      </div>
+      <div id="buttons">
+        <button class="btn" id="btn-left">${LCI}</button>
+        <button class="btn" id="btn-right">${RCI}</button>
+      </div>
+    </div>`,
+  },
+
+  // ── 2. Relay ─────────────────────────────────────────────
+  {
+    id:'relay', name:'Relay', tag:'Premium Dark',
+    accent:'#10b981', preview:'linear-gradient(135deg,#0c0c0e 0%,#0f1c16 100%)', light:false,
+    font:'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap',
+    init: initCommon,
+    css: BASE + STD + `
+      html,body{background:#0c0c0e;color:#ececec;font-family:'Outfit',sans-serif;}
+      #wordmark{font-size:15px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#fff;}
+      #status-pill{display:flex;align-items:center;gap:6px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.22);border-radius:20px;padding:5px 12px 5px 8px;}
+      #status-dot{width:6px;height:6px;border-radius:50%;background:#10b981;animation:breathe 2.8s ease-in-out infinite;}
+      @keyframes breathe{0%,100%{opacity:1;}50%{opacity:0.5;}}
+      #status-text{font-size:10px;font-weight:500;color:#10b981;font-family:'JetBrains Mono',monospace;letter-spacing:0.06em;}
+      #btn-reconnect{font-size:10px;color:#10b981;background:none;border:1px solid rgba(16,185,129,0.3);border-radius:6px;padding:2px 8px;}
+      #btn-settings{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.065);color:#4a4a55;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      #btn-power{width:38px;height:38px;border-radius:50%;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);color:#f87171;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      .pill-label{color:#4a4a55;font-family:'JetBrains Mono',monospace;}
+      .pill-slider{background:rgba(255,255,255,0.038);border:1px solid rgba(255,255,255,0.065);}
+      .pill-fill{background:linear-gradient(to top,rgba(16,185,129,0.5) 0%,rgba(16,185,129,0.1) 70%,transparent 100%);}
+      .pill-val{color:rgba(255,255,255,0.3);font-family:'JetBrains Mono',monospace;}
+      #trackpad{background:rgba(255,255,255,0.038);border:1px solid rgba(255,255,255,0.065);}
+      #trackpad::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,0.035) 1px,transparent 1px);background-size:20px 20px;pointer-events:none;}
+      #trackpad-hint span{font-size:9.5px;color:#4a4a55;letter-spacing:0.1em;text-transform:uppercase;}
+      #scroll-badge{color:#10b981;}
+      .ripple{background:rgba(16,185,129,0.12);}
+      .btn{background:rgba(255,255,255,0.038);border:1px solid rgba(255,255,255,0.065);color:#ececec;}
+      .btn-lbl{color:#4a4a55;font-family:'JetBrains Mono',monospace;}
+    `,
+    html: stdLayout('Relay','LIVE'),
+  },
+
+  // ── 3. Pebble ────────────────────────────────────────────
+  {
+    id:'pebble', name:'Pebble', tag:'Warm Editorial',
+    accent:'#d4603a', preview:'linear-gradient(135deg,#f3ece2 0%,#e8d5c0 100%)', light:true,
+    font:'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,700&display=swap',
+    init: initCommon,
+    css: BASE + STD + `
+      html,body{background:#f3ece2;color:#1c1410;font-family:'Bricolage Grotesque',sans-serif;}
+      #wordmark{font-size:18px;font-weight:700;color:#1c1410;letter-spacing:-0.01em;}
+      #status-pill{display:flex;align-items:center;gap:6px;background:rgba(212,96,58,0.08);border:1px solid rgba(212,96,58,0.22);border-radius:20px;padding:5px 12px 5px 8px;}
+      #status-dot{width:6px;height:6px;border-radius:50%;background:#d4603a;animation:breathe 3s ease-in-out infinite;}
+      @keyframes breathe{0%,100%{opacity:1;}50%{opacity:0.5;}}
+      #status-text{font-size:10px;font-weight:500;color:#d4603a;letter-spacing:0.04em;}
+      #btn-reconnect{font-size:10px;color:#d4603a;background:none;border:1px solid rgba(212,96,58,0.3);border-radius:6px;padding:2px 8px;}
+      #btn-settings{width:38px;height:38px;border-radius:50%;background:#ede7da;border:1px solid rgba(180,150,120,0.25);color:#b8a08a;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      #btn-power{width:38px;height:38px;border-radius:50%;background:rgba(180,40,20,0.08);border:1px solid rgba(180,40,20,0.2);color:#b83020;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      .pill-label{color:#b8a08a;}
+      .pill-slider{background:#faf7f2;border:1px solid rgba(180,150,120,0.22);}
+      .pill-fill{background:linear-gradient(to top,rgba(212,96,58,0.35) 0%,rgba(212,96,58,0.08) 70%,transparent 100%);}
+      .pill-val{color:#b8a08a;}
+      #trackpad{background:#faf7f2;border:1px solid rgba(180,150,120,0.22);}
+      #trackpad::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(180,150,120,0.06) 1px,transparent 1px);background-size:100% 22px;pointer-events:none;}
+      #trackpad-hint span{font-size:10px;color:#b8a08a;letter-spacing:0.06em;text-transform:uppercase;}
+      #scroll-badge{color:#d4603a;}
+      .ripple{background:rgba(212,96,58,0.1);border:1px solid rgba(212,96,58,0.2);}
+      .btn{background:#faf7f2;border:1px solid rgba(180,150,120,0.22);color:#1c1410;}
+      .btn-lbl{color:#b8a08a;}
+    `,
+    html: stdLayout('Pebble','LIVE'),
+  },
+
+  // ── 4. MacD ──────────────────────────────────────────────
+  {
+    id:'macd', name:'MacD', tag:'Terminal / Dev',
+    accent:'#3fb950', preview:'linear-gradient(135deg,#0d1117 0%,#0d2010 100%)', light:false,
+    font:'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap',
+    init: initCommon,
+    css: BASE + STD + `
+      html,body{background:#0d1117;color:#c8f2b0;font-family:'JetBrains Mono',monospace;}
+      #wordmark{font-size:13px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:#3fb950;}
+      #status-pill{display:flex;align-items:center;gap:6px;background:rgba(63,185,80,0.07);border:1px solid rgba(63,185,80,0.18);border-radius:4px;padding:5px 12px 5px 8px;}
+      #status-dot{width:6px;height:6px;border-radius:50%;background:#3fb950;animation:blink 1.2s step-end infinite;}
+      @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+      #status-text{font-size:10px;color:#3fb950;letter-spacing:0.08em;}
+      #btn-reconnect{font-size:10px;color:#3fb950;background:none;border:1px solid rgba(63,185,80,0.3);border-radius:3px;padding:2px 8px;}
+      #btn-settings{width:36px;height:36px;border-radius:4px;background:rgba(63,185,80,0.05);border:1px solid rgba(63,185,80,0.14);color:#2d5020;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      #btn-power{width:36px;height:36px;border-radius:4px;background:rgba(248,113,113,0.06);border:1px solid rgba(248,113,113,0.15);color:#f87171;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      .pill-label{color:#2d5020;}
+      .pill-slider{background:rgba(63,185,80,0.06);border:1px solid rgba(63,185,80,0.14);border-radius:4px;}
+      .pill-fill{background:linear-gradient(to top,rgba(63,185,80,0.5) 0%,rgba(63,185,80,0.1) 70%,transparent 100%);border-radius:4px;}
+      .pill-val{color:rgba(200,242,176,0.35);}
+      #trackpad{background:rgba(63,185,80,0.04);border:1px solid rgba(63,185,80,0.12);border-radius:8px;}
+      #trackpad::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(63,185,80,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(63,185,80,0.04) 1px,transparent 1px);background-size:24px 24px;pointer-events:none;}
+      #trackpad-hint span{font-size:9px;color:#2d5020;letter-spacing:0.1em;text-transform:uppercase;}
+      #scroll-badge{color:#3fb950;}
+      .ripple{background:rgba(63,185,80,0.12);}
+      .btn{background:rgba(63,185,80,0.05);border:1px solid rgba(63,185,80,0.14);border-radius:8px;color:#c8f2b0;}
+      .btn-lbl{color:#2d5020;}
+    `,
+    html: stdLayout('MacD','CONNECTED'),
+  },
+
+  // ── 5. Tap ───────────────────────────────────────────────
+  {
+    id:'tap', name:'Tap', tag:'Clay / Tactile',
+    accent:'#f4711e', preview:'linear-gradient(135deg,#dbd5ca 0%,#cec5b8 100%)', light:true,
+    font:null, init: initCommon,
+    css: BASE + STD + `
+      html,body{background:#dbd5ca;color:#2c2520;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Rounded',sans-serif;}
+      #wordmark{font-size:18px;font-weight:700;color:#2c2520;letter-spacing:-0.01em;}
+      #status-pill{display:flex;align-items:center;gap:6px;background:rgba(244,113,30,0.08);border:1px solid rgba(244,113,30,0.2);border-radius:20px;padding:5px 12px 5px 8px;}
+      #status-dot{width:6px;height:6px;border-radius:50%;background:#f4711e;animation:breathe 3s ease-in-out infinite;}
+      @keyframes breathe{0%,100%{opacity:1;}50%{opacity:0.5;}}
+      #status-text{font-size:10px;font-weight:500;color:#f4711e;letter-spacing:0.04em;}
+      #btn-reconnect{font-size:10px;color:#f4711e;background:none;border:1px solid rgba(244,113,30,0.3);border-radius:20px;padding:2px 10px;}
+      #btn-settings{width:40px;height:40px;border-radius:50%;background:#dbd5ca;border:none;color:#9c8878;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;box-shadow:4px 4px 8px rgba(0,0,0,0.12),-3px -3px 7px rgba(255,255,255,0.65);}
+      #btn-power{width:40px;height:40px;border-radius:50%;background:#dbd5ca;border:none;color:#e55a3a;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;box-shadow:4px 4px 8px rgba(0,0,0,0.12),-3px -3px 7px rgba(255,255,255,0.65);}
+      .pill-label{color:#9c8878;}
+      .pill-slider{background:#dbd5ca;border:none;box-shadow:inset 3px 3px 7px rgba(0,0,0,0.1),inset -2px -2px 5px rgba(255,255,255,0.6);}
+      .pill-fill{background:linear-gradient(to top,rgba(244,113,30,0.38) 0%,rgba(244,113,30,0.08) 70%,transparent 100%);}
+      .pill-val{color:#9c8878;}
+      #trackpad{background:#dbd5ca;border:none;box-shadow:inset 4px 4px 10px rgba(0,0,0,0.1),inset -3px -3px 8px rgba(255,255,255,0.65);}
+      #trackpad-hint span{font-size:10px;color:#9c8878;letter-spacing:0.06em;text-transform:uppercase;}
+      #scroll-badge{color:#f4711e;}
+      .ripple{background:rgba(244,113,30,0.1);}
+      .btn{background:#dbd5ca;border:none;color:#2c2520;box-shadow:4px 4px 10px rgba(0,0,0,0.12),-3px -3px 8px rgba(255,255,255,0.65);}
+      .btn-lbl{color:#9c8878;}
+      .btn:active,.btn.pressing{box-shadow:inset 2px 2px 5px rgba(0,0,0,0.1),inset -1px -1px 4px rgba(255,255,255,0.5);transform:scale(0.97)!important;}
+    `,
+    html: stdLayout('Tap','LIVE'),
+  },
+
+  // ── 6. Ctrl ──────────────────────────────────────────────
+  {
+    id:'ctrl', name:'Ctrl', tag:'Ultra Minimal',
+    accent:'#60a5fa', preview:'linear-gradient(135deg,#09090b 0%,#111114 100%)', light:false,
+    font:'https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&display=swap',
+    init: initCtrl,
+    css: BASE + `
+      html,body{background:#09090b;color:#e4e4e7;font-family:'Sora',sans-serif;}
+      #app{padding:0;gap:0;}
+      #header{flex-shrink:0;padding:28px 28px 0;}
+      #header-row{display:flex;align-items:center;justify-content:space-between;height:40px;}
+      #wordmark{font-size:14px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:#e4e4e7;}
+      #status-row{display:flex;align-items:center;gap:8px;}
+      #status-dot{width:6px;height:6px;border-radius:50%;background:#60a5fa;}
+      #status-label{font-size:11px;color:#52525b;letter-spacing:0.04em;}
+      #btn-reconnect{font-size:10px;color:#60a5fa;background:none;border:none;padding:0;letter-spacing:0.04em;}
+      .header-right{display:flex;align-items:center;gap:10px;}
+      #btn-settings{width:30px;height:30px;border-radius:50%;background:none;border:1px solid rgba(255,255,255,0.07);color:#3f3f46;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      #btn-power{width:32px;height:32px;border-radius:50%;background:none;border:1px solid rgba(255,255,255,0.07);color:#ef4444;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;opacity:0.6;}
+      .line{height:1px;background:rgba(255,255,255,0.07);margin:20px 28px 0;flex-shrink:0;}
+      .line.accent{background:linear-gradient(to right,#60a5fa,transparent);opacity:0.4;}
+      #trackpad-area{flex:1;padding:20px 28px;min-height:0;display:flex;flex-direction:column;}
+      #trackpad-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0;}
+      #trackpad-meta span{font-size:9px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:#3f3f46;}
+      #scroll-indicator{font-size:9px;color:#60a5fa;opacity:0;transition:opacity 0.2s;}
+      #trackpad{flex:1;border-radius:16px;border:1px solid rgba(255,255,255,0.07);position:relative;overflow:hidden;cursor:crosshair;}
+      #trackpad.scroll-mode #scroll-indicator{opacity:1;}
+      #trackpad-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity 0.25s;}
+      #trackpad-hint p{font-size:11px;color:#3f3f46;font-weight:300;letter-spacing:0.06em;}
+      #trackpad.trackpad-active #trackpad-hint{opacity:0;}
+      #sliders-section{flex-shrink:0;padding:16px 28px;display:flex;flex-direction:column;gap:14px;}
+      .slider-row{display:flex;align-items:center;gap:14px;}
+      .s-icon{width:16px;flex-shrink:0;opacity:0.35;display:flex;align-items:center;}
+      #vol-slider,#spd-slider{flex:1;height:2px;background:rgba(255,255,255,0.07);border-radius:1px;position:relative;cursor:ew-resize;touch-action:none;}
+      .s-fill{position:absolute;left:0;top:0;bottom:0;background:#60a5fa;border-radius:1px;transition:width 0.04s;}
+      .s-thumb{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;background:#09090b;border:2px solid #60a5fa;transform:translate(-50%,-50%);pointer-events:none;}
+      .s-val{font-size:11px;font-weight:500;color:#52525b;width:38px;text-align:right;flex-shrink:0;letter-spacing:0.02em;}
+      #click-section{flex-shrink:0;padding:0 28px max(36px,env(safe-area-inset-bottom,36px));display:flex;gap:12px;}
+      .btn{flex:1;height:56px;border-radius:12px;border:1px solid rgba(255,255,255,0.07);background:none;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;touch-action:manipulation;transition:all 0.15s cubic-bezier(0.16,1,0.3,1);color:#52525b;-webkit-tap-highlight-color:transparent;}
+      .btn:active,.btn.pressing{border-color:rgba(96,165,250,0.3);color:#60a5fa;background:rgba(96,165,250,0.08);}
+      .btn-lbl{font-size:11px;font-weight:500;letter-spacing:0.08em;}
+      .ripple{background:rgba(96,165,250,0.1);}
+      #scroll-badge{color:#60a5fa;right:14px;top:12px;}
+    `,
+    html: `<div id="app">
+      <div id="header">
+        <div id="header-row">
+          <span id="wordmark">Ctrl</span>
+          <div id="status-row">
+            <div id="status-dot"></div>
+            <span id="status-label">live</span>
+            <button id="btn-reconnect">retry</button>
+          </div>
+          <div class="header-right">
+            <button id="btn-settings">${SI}</button>
+            <button id="btn-power">${PI}</button>
+          </div>
+        </div>
+      </div>
+      <div class="line accent"></div>
+      <div id="trackpad-area">
+        <div id="trackpad-meta"><span>Trackpad</span><span id="scroll-indicator">Scroll mode</span></div>
+        <div id="trackpad">
+          <div id="trackpad-hint"><p>drag to move · tap to click</p></div>
+          <div id="scroll-badge">Scroll</div>
+        </div>
+      </div>
+      <div class="line"></div>
+      <div id="sliders-section">
+        <div class="slider-row">
+          <span class="s-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></span>
+          <div id="vol-slider"><div class="s-fill" id="vol-fill"></div><div class="s-thumb" id="vol-thumb"></div></div>
+          <span class="s-val" id="vol-val">50%</span>
+        </div>
+        <div class="slider-row">
+          <span class="s-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
+          <div id="spd-slider"><div class="s-fill" id="spd-fill"></div><div class="s-thumb" id="spd-thumb"></div></div>
+          <span class="s-val" id="spd-val">2.2</span>
+        </div>
+      </div>
+      <div class="line"></div>
+      <div id="click-section">
+        <button class="btn" id="btn-left">${LCI}<span class="btn-lbl">Left click</span></button>
+        <button class="btn" id="btn-right">${RCI}<span class="btn-lbl">Right click</span></button>
+      </div>
+    </div>`,
+  },
+
+  // ── 7. Orbit ─────────────────────────────────────────────
+  {
+    id:'orbit', name:'Orbit', tag:'Mission Control',
+    accent:'#a78bfa', preview:'linear-gradient(135deg,#06061a 0%,#0e0820 100%)', light:false,
+    font:'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap',
+    init: initCommon,
+    css: BASE + STD + `
+      html,body{background:#06061a;color:#e2e0ff;font-family:'Space Grotesk',sans-serif;}
+      #wordmark{font-size:14px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:#c4b5fd;font-family:'Space Mono',monospace;}
+      #status-pill{display:flex;align-items:center;gap:6px;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.25);border-radius:20px;padding:5px 12px 5px 8px;}
+      #status-dot{width:6px;height:6px;border-radius:50%;background:#22d3ee;animation:ping 2.4s ease-in-out infinite;}
+      @keyframes ping{0%,100%{box-shadow:0 0 0 0 rgba(34,211,238,0.6);opacity:1;}50%{box-shadow:0 0 0 4px rgba(34,211,238,0);opacity:0.7;}}
+      #status-text{font-size:9px;font-weight:700;color:#22d3ee;font-family:'Space Mono',monospace;letter-spacing:0.12em;}
+      #btn-reconnect{font-size:10px;color:#a78bfa;background:none;border:1px solid rgba(167,139,250,0.3);border-radius:6px;padding:2px 8px;}
+      #btn-settings{width:38px;height:38px;border-radius:50%;background:rgba(120,80,255,0.05);border:1px solid rgba(120,80,255,0.15);color:#3d3b5e;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      #btn-power{width:38px;height:38px;border-radius:50%;background:rgba(248,113,113,0.07);border:1px solid rgba(248,113,113,0.18);color:#f87171;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      #readout{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:rgba(120,80,255,0.05);border:1px solid rgba(120,80,255,0.15);border-radius:12px;flex-shrink:0;}
+      .readout-item{display:flex;flex-direction:column;align-items:center;gap:2px;}
+      .readout-val{font-size:14px;font-weight:600;color:#c4b5fd;font-family:'Space Mono',monospace;letter-spacing:-0.02em;}
+      .readout-lbl{font-size:7px;letter-spacing:0.18em;text-transform:uppercase;color:#3d3b5e;font-family:'Space Mono',monospace;}
+      .readout-div{width:1px;height:28px;background:rgba(120,80,255,0.15);}
+      .pill-label{color:#3d3b5e;font-family:'Space Mono',monospace;}
+      .pill-slider{background:rgba(120,80,255,0.06);border:1px solid rgba(120,80,255,0.15);}
+      .pill-fill{background:linear-gradient(to top,rgba(167,139,250,0.5) 0%,rgba(167,139,250,0.1) 60%,transparent 100%);}
+      .pill-val{color:rgba(226,224,255,0.3);font-family:'Space Mono',monospace;}
+      #trackpad{background:rgba(120,80,255,0.06);border:1px solid rgba(120,80,255,0.15);}
+      #trackpad::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(120,80,255,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(120,80,255,0.06) 1px,transparent 1px);background-size:30px 30px;pointer-events:none;}
+      #trackpad::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent calc(50% - 0.5px),rgba(167,139,250,0.1) calc(50%),rgba(167,139,250,0.1) calc(50% + 0.5px),transparent calc(50% + 0.5px)),linear-gradient(transparent calc(50% - 0.5px),rgba(167,139,250,0.1) calc(50%),rgba(167,139,250,0.1) calc(50% + 0.5px),transparent calc(50% + 0.5px));pointer-events:none;}
+      #trackpad-hint span{font-size:9px;color:#3d3b5e;letter-spacing:0.12em;text-transform:uppercase;}
+      #scroll-badge{color:#a78bfa;}
+      .ripple{border:1px solid rgba(167,139,250,0.4);background:transparent;}
+      .btn{background:rgba(120,80,255,0.05);border:1px solid rgba(120,80,255,0.15);color:#e2e0ff;}
+      .btn-lbl{color:#3d3b5e;font-family:'Space Mono',monospace;}
+    `,
+    html: stdLayout('Orbit','LINKED',
+      `<div id="readout">
+        <div class="readout-item"><span class="readout-val" id="r-vol">50</span><span class="readout-lbl">Volume</span></div>
+        <div class="readout-div"></div>
+        <div class="readout-item"><span class="readout-val" id="r-spd">2.2</span><span class="readout-lbl">Speed</span></div>
+        <div class="readout-div"></div>
+        <div class="readout-item"><span class="readout-val" style="color:#22d3ee;">ON</span><span class="readout-lbl">Display</span></div>
+      </div>`
+    ),
+  },
+
+  // ── 8. Linen ─────────────────────────────────────────────
+  {
+    id:'linen', name:'Linen', tag:'Old Editorial',
+    accent:'#c0392b', preview:'linear-gradient(135deg,#f5f0e6 0%,#ede7da 100%)', light:true,
+    font:'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Code+Pro:wght@400;500&display=swap',
+    init: initCommon,
+    css: BASE + STD + `
+      html,body{background:#f5f0e6;color:#1a1208;font-family:'Playfair Display',serif;}
+      #topbar{border-bottom:2px solid #1a1208;padding-bottom:16px;height:auto;margin-bottom:4px;align-items:flex-start;}
+      #wordmark{font-size:28px;font-weight:700;color:#1a1208;letter-spacing:-0.01em;line-height:1;}
+      #status-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid rgba(192,57,43,0.25);background:rgba(192,57,43,0.06);border-radius:0;margin-top:4px;}
+      #status-dot{width:5px;height:5px;border-radius:50%;background:#c0392b;}
+      #status-text{font-size:8px;font-weight:500;color:#c0392b;font-family:'Source Code Pro',monospace;letter-spacing:0.1em;}
+      #btn-reconnect{font-size:9px;color:#c0392b;background:none;border:none;font-family:'Source Code Pro',monospace;}
+      #btn-settings{width:32px;height:32px;border-radius:0;background:transparent;border:1px solid rgba(60,40,15,0.18);color:#a89070;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      #btn-power{width:32px;height:32px;border-radius:0;background:transparent;border:1px solid rgba(60,40,15,0.18);color:#a89070;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      .topbar-right{align-items:flex-end;}
+      .pill-label{color:#a89070;font-family:'Source Code Pro',monospace;}
+      .pill-slider{background:rgba(60,40,15,0.04);border:1px solid rgba(60,40,15,0.12);border-radius:3px;}
+      .pill-fill{background:linear-gradient(to top,rgba(192,57,43,0.3) 0%,rgba(192,57,43,0.06) 70%,transparent 100%);border-radius:3px;}
+      .pill-val{color:#a89070;font-family:'Source Code Pro',monospace;}
+      #trackpad{background:rgba(60,40,15,0.03);border:1px solid rgba(60,40,15,0.12);border-radius:3px;}
+      #trackpad::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(60,40,15,0.05) 1px,transparent 1px);background-size:100% 22px;pointer-events:none;}
+      #trackpad-hint span{font-size:10px;color:#a89070;letter-spacing:0.1em;text-transform:uppercase;}
+      #scroll-badge{color:#c0392b;}
+      .ripple{background:rgba(192,57,43,0.1);}
+      .ruled-sep{height:2px;background:#1a1208;flex-shrink:0;margin:2px 0;}
+      .btn{background:#faf7f0;border:1px solid rgba(60,40,15,0.12);border-radius:3px;color:#1a1208;}
+      .btn-lbl{color:#a89070;font-family:'Source Code Pro',monospace;}
+    `,
+    html: stdLayout('Linen','LIVE','','<div class="ruled-sep"></div>'),
+  },
+
+  // ── 9. Neon ──────────────────────────────────────────────
+  {
+    id:'neon', name:'Neon', tag:'Synthwave',
+    accent:'#ff2d9b', preview:'linear-gradient(135deg,#080412 0%,#0e0820 100%)', light:false,
+    font:'https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap',
+    init: initCommon,
+    css: BASE + STD + `
+      html,body{background:#080412;color:#f0e6ff;font-family:'Rajdhani',sans-serif;}
+      #app::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.08) 3px,rgba(0,0,0,0.08) 4px);pointer-events:none;z-index:1;}
+      #app{position:relative;}
+      #topbar,#main,#click-row,.neon-rule{position:relative;z-index:2;}
+      #wordmark{font-size:22px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:#ff2d9b;text-shadow:0 0 16px rgba(255,45,155,0.6);}
+      #status-pill{display:flex;align-items:center;gap:6px;background:rgba(0,245,255,0.06);border:1px solid rgba(0,245,255,0.2);border-radius:3px;padding:5px 12px 5px 8px;}
+      #status-dot{width:5px;height:5px;border-radius:50%;background:#00f5ff;box-shadow:0 0 6px #00f5ff;animation:blink 1.4s step-end infinite;}
+      @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+      #status-text{font-size:9px;color:#00f5ff;font-family:'Share Tech Mono',monospace;letter-spacing:0.1em;}
+      #btn-reconnect{font-size:10px;color:#ff2d9b;background:none;border:1px solid rgba(255,45,155,0.3);border-radius:3px;padding:2px 8px;}
+      #btn-settings{width:38px;height:38px;border-radius:6px;background:rgba(255,0,200,0.05);border:1px solid rgba(255,0,200,0.14);color:#3d2860;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      #btn-power{width:38px;height:38px;border-radius:6px;background:rgba(255,45,155,0.07);border:1px solid rgba(255,45,155,0.2);color:#ff2d9b;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      .neon-rule{height:1px;background:linear-gradient(90deg,transparent 0%,rgba(255,45,155,0.3) 30%,rgba(0,245,255,0.3) 70%,transparent 100%);flex-shrink:0;}
+      .pill-label{color:#3d2860;font-family:'Share Tech Mono',monospace;}
+      .pill-slider{background:rgba(255,0,200,0.04);border:1px solid rgba(255,0,200,0.14);border-radius:6px;}
+      .pill-fill{background:linear-gradient(to top,rgba(255,45,155,0.55) 0%,rgba(255,45,155,0.1) 60%,transparent 100%);border-radius:6px;}
+      .pill-val{color:rgba(240,230,255,0.3);font-family:'Share Tech Mono',monospace;}
+      #trackpad{background:rgba(255,0,200,0.04);border:1px solid rgba(255,0,200,0.14);border-radius:6px;}
+      #trackpad::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,45,155,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,0.04) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;}
+      #trackpad-hint span{font-size:9px;color:#3d2860;letter-spacing:0.14em;text-transform:uppercase;font-family:'Share Tech Mono',monospace;}
+      #scroll-badge{color:#ff2d9b;font-family:'Share Tech Mono',monospace;}
+      .ripple{border:1px solid rgba(255,45,155,0.5);background:transparent;}
+      .btn{background:rgba(255,0,200,0.05);border:1px solid rgba(255,0,200,0.14);border-radius:6px;color:#f0e6ff;}
+      .btn-lbl{color:#3d2860;font-family:'Share Tech Mono',monospace;}
+    `,
+    html: stdLayout('NEON','ONLINE','<div class="neon-rule"></div>','<div class="neon-rule"></div>'),
+  },
+
+  // ── 10. Moss ─────────────────────────────────────────────
+  {
+    id:'moss', name:'Moss', tag:'Nature Calm',
+    accent:'#7bc25a', preview:'linear-gradient(135deg,#131a10 0%,#0e1409 100%)', light:false,
+    font:'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap',
+    init: initCommon,
+    css: BASE + STD + `
+      html,body{background:#131a10;color:#d4e8c8;font-family:'Plus Jakarta Sans',sans-serif;}
+      #wordmark{font-size:18px;font-weight:600;color:#a8d88a;letter-spacing:0.02em;}
+      #status-pill{display:flex;align-items:center;gap:7px;background:rgba(123,194,90,0.08);border:1px solid rgba(123,194,90,0.2);border-radius:30px;padding:6px 14px 6px 10px;}
+      #status-dot{width:7px;height:7px;border-radius:50%;background:#7bc25a;animation:breathe 3.2s ease-in-out infinite;}
+      @keyframes breathe{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.5;transform:scale(0.85);}}
+      #status-text{font-size:10px;font-weight:500;color:#7bc25a;letter-spacing:0.08em;}
+      #btn-reconnect{font-size:10px;color:#7bc25a;background:none;border:1px solid rgba(123,194,90,0.25);border-radius:20px;padding:2px 10px;}
+      #btn-settings{width:38px;height:38px;border-radius:50%;background:rgba(100,180,80,0.05);border:1px solid rgba(100,180,80,0.12);color:#3a4e2a;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      #btn-power{width:38px;height:38px;border-radius:50%;background:rgba(232,130,106,0.07);border:1px solid rgba(232,130,106,0.18);color:#e8826a;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      .pill-label{color:#3a4e2a;}
+      .pill-slider{background:rgba(100,180,80,0.06);border:1px solid rgba(100,180,80,0.12);}
+      .pill-fill{background:linear-gradient(to top,rgba(123,194,90,0.5) 0%,rgba(123,194,90,0.1) 60%,transparent 100%);}
+      .pill-val{color:rgba(212,232,200,0.3);}
+      #trackpad{background:rgba(100,180,80,0.06);border:1px solid rgba(100,180,80,0.12);}
+      #trackpad::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(123,194,90,0.12) 1px,transparent 1px);background-size:22px 22px;pointer-events:none;}
+      #trackpad-hint span{font-size:9px;color:#3a4e2a;letter-spacing:0.1em;text-transform:uppercase;}
+      #scroll-badge{color:#7bc25a;}
+      .ripple{border:1px solid rgba(123,194,90,0.2);background:rgba(123,194,90,0.08);}
+      .btn{background:rgba(100,180,80,0.05);border:1px solid rgba(100,180,80,0.12);border-radius:20px;color:#d4e8c8;}
+      .btn-lbl{color:#3a4e2a;}
+    `,
+    html: stdLayout('Moss','connected'),
+  },
+
+  // ── 11. Steel ────────────────────────────────────────────
+  {
+    id:'steel', name:'Steel', tag:'Industrial Pro',
+    accent:'#5b9bd6', preview:'linear-gradient(135deg,#1a1c1e 0%,#141618 100%)', light:false,
+    font:'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap',
+    init: initCommon,
+    css: BASE + `
+      html,body{background:#1a1c1e;color:#d8dde3;font-family:'IBM Plex Sans',sans-serif;}
+      #app{padding:0;gap:0;}
+      #app::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(255,255,255,0.005) 3px,rgba(255,255,255,0.005) 4px);pointer-events:none;}
+      #header{flex-shrink:0;background:rgba(0,0,0,0.3);border-bottom:1px solid rgba(255,255,255,0.09);padding:20px 22px 16px;position:relative;z-index:2;}
+      #header-row{display:flex;align-items:center;justify-content:space-between;height:36px;}
+      #wordmark-group{display:flex;align-items:center;gap:10px;}
+      #wordmark-icon{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,rgba(255,255,255,0.1) 0%,rgba(255,255,255,0.04) 100%);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;}
+      #wordmark{font-size:14px;font-weight:600;letter-spacing:0.06em;color:#d8dde3;}
+      #header-right{display:flex;align-items:center;gap:8px;}
+      #status-pill{display:flex;align-items:center;gap:6px;background:rgba(91,155,214,0.08);border:1px solid rgba(91,155,214,0.2);border-radius:4px;padding:4px 10px 4px 8px;}
+      #status-dot{width:5px;height:5px;border-radius:50%;background:#5b9bd6;animation:pulse 2.5s ease-in-out infinite;}
+      @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+      #status-text{font-size:9px;font-weight:500;color:#5b9bd6;font-family:'IBM Plex Mono',monospace;letter-spacing:0.1em;}
+      #btn-reconnect{font-size:10px;color:#5b9bd6;background:none;border:1px solid rgba(91,155,214,0.25);border-radius:4px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;}
+      #btn-settings{width:32px;height:32px;border-radius:6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:#3e444c;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      #btn-power{width:32px;height:32px;border-radius:6px;background:rgba(214,91,91,0.07);border:1px solid rgba(214,91,91,0.18);color:#d65b5b;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;}
+      #metrics{display:flex;border-bottom:1px solid rgba(255,255,255,0.09);flex-shrink:0;position:relative;z-index:2;}
+      .metric{flex:1;padding:10px 16px;border-right:1px solid rgba(255,255,255,0.09);display:flex;flex-direction:column;gap:2px;}
+      .metric:last-child{border-right:none;}
+      .metric-val{font-size:18px;font-weight:600;color:#d8dde3;font-family:'IBM Plex Mono',monospace;letter-spacing:-0.03em;line-height:1;}
+      .metric-lbl{font-size:8px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:#3e444c;font-family:'IBM Plex Mono',monospace;}
+      #body{flex:1;display:flex;flex-direction:column;min-height:0;position:relative;z-index:2;}
+      #main{flex:1;display:flex;min-height:0;}
+      #sliders{display:flex;flex-direction:column;width:56px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.09);}
+      .pill-wrap{flex:1;display:flex;flex-direction:column;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.09);}
+      .pill-wrap:last-child{border-bottom:none;}
+      .pill-label{padding:8px 0 0;text-align:center;font-size:7px;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;color:#3e444c;font-family:'IBM Plex Mono',monospace;flex-shrink:0;}
+      .pill-slider{flex:1;position:relative;overflow:hidden;cursor:ns-resize;margin:6px 8px 8px;}
+      .pill-fill{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(91,155,214,0.45) 0%,rgba(91,155,214,0.08) 60%,transparent 100%);border:1px solid rgba(91,155,214,0.15);border-radius:3px;transition:height 0.06s ease-out;}
+      .pill-val{position:absolute;bottom:7px;left:0;right:0;text-align:center;font-size:8px;color:rgba(216,221,227,0.3);font-family:'IBM Plex Mono',monospace;pointer-events:none;z-index:2;}
+      #trackpad{flex:1;position:relative;overflow:hidden;cursor:none;background:rgba(0,0,0,0.15);}
+      #trackpad::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(rgba(255,255,255,0.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.012) 1px,transparent 1px);background-size:60px 60px,60px 60px,12px 12px,12px 12px;pointer-events:none;}
+      #trackpad-hint span{font-size:9px;color:#3e444c;letter-spacing:0.1em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace;}
+      #scroll-badge{color:#5b9bd6;font-family:'IBM Plex Mono',monospace;}
+      .ripple{border:1px solid rgba(154,164,176,0.3);background:transparent;border-radius:0;}
+      #click-row{display:grid;grid-template-columns:1fr 1fr;flex-shrink:0;height:72px;border-top:1px solid rgba(255,255,255,0.09);}
+      .btn{background:transparent;border:none;border-right:1px solid rgba(255,255,255,0.09);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;touch-action:manipulation;transition:background 0.12s;-webkit-tap-highlight-color:transparent;color:#d8dde3;}
+      .btn:last-child{border-right:none;}
+      .btn:active,.btn.pressing{background:rgba(255,255,255,0.04);transform:none!important;}
+      .btn-lbl{font-size:8px;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;color:#3e444c;font-family:'IBM Plex Mono',monospace;}
+    `,
+    html: `<div id="app">
+      <div id="header">
+        <div id="header-row">
+          <div id="wordmark-group">
+            <div id="wordmark-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+            </div>
+            <span id="wordmark">Steel</span>
+          </div>
+          <div id="header-right">
+            <div id="status-pill"><div id="status-dot"></div><span id="status-text">ACTIVE</span></div>
+            <button id="btn-reconnect">retry</button>
+            <button id="btn-settings">${SI}</button>
+            <button id="btn-power">${PI}</button>
+          </div>
+        </div>
+      </div>
+      <div id="metrics">
+        <div class="metric"><span class="metric-val" id="m-vol">50</span><span class="metric-lbl">Volume</span></div>
+        <div class="metric"><span class="metric-val" id="m-spd">2.2</span><span class="metric-lbl">Speed</span></div>
+        <div class="metric"><span class="metric-val" style="color:#5b9bd6;">ON</span><span class="metric-lbl">Display</span></div>
+      </div>
+      <div id="body">
+        <div id="main">
+          <div id="sliders">
+            <div class="pill-wrap">
+              <span class="pill-label">Vol</span>
+              <div class="pill-slider" id="vol-slider"><div class="pill-fill" id="vol-fill"></div><span class="pill-val" id="vol-val">50</span></div>
+            </div>
+            <div class="pill-wrap">
+              <span class="pill-label">Spd</span>
+              <div class="pill-slider" id="spd-slider"><div class="pill-fill" id="spd-fill"></div><span class="pill-val" id="spd-val">2.2</span></div>
+            </div>
+          </div>
+          <div id="trackpad">
+            <div id="trackpad-hint"><span>Tap to click</span><span>Drag to move</span></div>
+            <div id="scroll-badge">Scroll</div>
+          </div>
+        </div>
+        <div id="click-row">
+          <button class="btn" id="btn-left">${LCI}<span class="btn-lbl">Left Click</span></button>
+          <button class="btn" id="btn-right">${RCI}<span class="btn-lbl">Right Click</span></button>
+        </div>
+      </div>
+    </div>`,
+  },
+];
+
+// ── Apply theme ───────────────────────────────────────────────
+function applyTheme(id) {
+  const theme = THEMES.find(t => t.id === id);
+  if (!theme) return;
+
+  document.getElementById('theme-style').textContent = theme.css;
+  document.getElementById('theme-root').innerHTML = theme.html;
+
+  if (activeFontLink) { activeFontLink.remove(); activeFontLink = null; }
+  if (theme.font) {
+    activeFontLink = document.createElement('link');
+    activeFontLink.rel = 'stylesheet';
+    activeFontLink.href = theme.font;
+    document.head.appendChild(activeFontLink);
+  }
+
+  theme.init();
+
+  localStorage.setItem('mac-remote-theme', id);
+
+  document.querySelectorAll('.theme-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.id === id);
+  });
+}
+
+// ── Theme grid ────────────────────────────────────────────────
+function buildMini(accent, light) {
+  const b = light ? '0,0,0' : '255,255,255';
+  return `<div style="display:flex;gap:4px;align-items:stretch;height:36px;width:58px;">
+    <div style="display:flex;flex-direction:column;gap:3px;width:12px;">
+      <div style="flex:1;border-radius:8px;border:1px solid ${accent}66;background:${accent}28;"></div>
+      <div style="flex:1;border-radius:8px;border:1px solid rgba(${b},0.14);background:rgba(${b},0.07);"></div>
+    </div>
+    <div style="flex:1;border-radius:5px;border:1px solid rgba(${b},0.12);background:rgba(${b},0.06);"></div>
+  </div>`;
+}
+
+function buildThemeGrid() {
+  const saved = localStorage.getItem('mac-remote-theme') || 'default';
+  const grid  = document.getElementById('theme-grid');
+
+  grid.innerHTML = THEMES.map(t => `
+    <div class="theme-card${t.id === saved ? ' active' : ''}" data-id="${t.id}" style="--card-accent:${t.accent};">
+      <div class="theme-card-preview" style="background:${t.preview};">
+        ${buildMini(t.accent, t.light)}
+        <div class="theme-card-check">
+          <svg width="9" height="7" viewBox="0 0 9 7" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,3.5 3.2,5.8 8,1"/></svg>
+        </div>
+      </div>
+      <div class="theme-card-info">
+        <div class="theme-card-name">${t.name}</div>
+        <div class="theme-card-tag">${t.tag}</div>
+      </div>
+    </div>`).join('');
+
+  grid.querySelectorAll('.theme-card').forEach(card => {
+    let sy = 0, sx = 0;
+    card.addEventListener('touchstart', (e) => { sy = e.touches[0].clientY; sx = e.touches[0].clientX; }, { passive: true });
+    card.addEventListener('touchend', (e) => {
+      if (Math.abs(e.changedTouches[0].clientY - sy) < 10 && Math.abs(e.changedTouches[0].clientX - sx) < 10) {
+        e.preventDefault();
+        applyTheme(card.dataset.id); navigator.vibrate?.(5);
+        setTimeout(closeSettings, 480);
       }
     }, { passive: false });
+    card.addEventListener('click', () => { applyTheme(card.dataset.id); setTimeout(closeSettings, 480); });
+  });
+}
 
-    // ── Click buttons ─────────────────────────────────────────
-    function pressBtn(el, event) {
-      el.classList.add('pressing');
-      socket.emit(event);
-      navigator.vibrate?.(8);
-      setTimeout(() => el.classList.remove('pressing'), 150);
-    }
+// ── Settings panel ────────────────────────────────────────────
+const overlay = document.getElementById('settings-overlay');
+const sheet   = document.getElementById('settings-sheet');
+const grid    = document.getElementById('theme-grid');
 
-    document.getElementById('btn-left').addEventListener('touchstart', (e) => { e.preventDefault(); pressBtn(e.currentTarget, 'leftclick'); });
-    document.getElementById('btn-right').addEventListener('touchstart', (e) => { e.preventDefault(); pressBtn(e.currentTarget, 'rightclick'); });
-  </script>
+function openSettings()  { overlay.classList.add('open'); }
+function closeSettings() { sheet.style.transition = ''; sheet.style.transform = ''; overlay.classList.remove('open'); }
+
+document.getElementById('btn-settings-close').addEventListener('touchstart', (e) => { e.preventDefault(); closeSettings(); }, { passive: false });
+document.getElementById('btn-settings-close').addEventListener('click', closeSettings);
+
+overlay.addEventListener('touchstart', (e) => { if (e.target === overlay) { e.preventDefault(); closeSettings(); } }, { passive: false });
+overlay.addEventListener('click', (e) => { if (e.target === overlay) closeSettings(); });
+
+let swipeY = 0, swipeDelta = 0, isSwiping = false;
+sheet.addEventListener('touchstart', (e) => { swipeY = e.touches[0].clientY; swipeDelta = 0; isSwiping = false; }, { passive: true });
+sheet.addEventListener('touchmove', (e) => {
+  const dy = e.touches[0].clientY - swipeY; swipeDelta = dy;
+  if (dy > 4 && grid.scrollTop === 0) { isSwiping = true; sheet.style.transition = 'none'; sheet.style.transform = `translateY(${dy}px)`; }
+}, { passive: true });
+sheet.addEventListener('touchend', () => {
+  if (isSwiping && swipeDelta > 80) closeSettings();
+  else { sheet.style.transition = ''; sheet.style.transform = ''; }
+  isSwiping = false;
+});
+
+// ── Init ──────────────────────────────────────────────────────
+buildThemeGrid();
+applyTheme(localStorage.getItem('mac-remote-theme') || 'default');
+
+fetch('/volume').then(r => r.json()).then(d => {
+  currentVolume = d.level;
+  const fill = document.getElementById('vol-fill');
+  const val  = document.getElementById('vol-val');
+  if (fill) fill.style.height = d.level + '%';
+  if (val)  val.textContent   = d.level + '%';
+  ['r-vol','m-vol'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = d.level; });
+}).catch(() => {});
+</script>
 </body>
 </html>

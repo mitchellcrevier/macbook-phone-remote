@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Pebble — Concept 02: Warm Editorial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f3ece2;
+      --bg-warm: #ede4d7;
+      --surface: #faf7f2;
+      --border: rgba(180,150,120,0.18);
+      --border-hi: rgba(212,96,58,0.28);
+      --text: #1c1410;
+      --text-mid: #7a6552;
+      --text-dim: #b8a08a;
+      --accent: #d4603a;
+      --accent-light: rgba(212,96,58,0.1);
+      --accent-mid: rgba(212,96,58,0.22);
+      --shadow: rgba(140,100,65,0.12);
+      --r: 22px;
+      --font: 'Bricolage Grotesque', sans-serif;
+      --mono: 'DM Mono', monospace;
+    }
+
+    html, body {
+      height: 100%;
+      background: #e6ddd0;
+      color: var(--text);
+      font-family: var(--font);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .back-link {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-decoration: none;
+      letter-spacing: 0.08em;
+      font-family: var(--mono);
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: var(--accent); }
+
+    #phone {
+      width: 390px;
+      height: 844px;
+      background: var(--bg);
+      border-radius: 48px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 20px 36px;
+      gap: 14px;
+      border: 1px solid rgba(180,150,120,0.25);
+      box-shadow:
+        0 2px 0 0 rgba(255,255,255,0.7) inset,
+        0 60px 100px rgba(120,80,40,0.2),
+        0 4px 20px rgba(120,80,40,0.08);
+    }
+
+    /* Top bar */
+    #topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      height: 40px;
+    }
+
+    #wordmark {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    #wordmark span {
+      color: var(--accent);
+    }
+
+    #status-badge {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    #status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #5cb85c;
+      box-shadow: 0 0 0 2px rgba(92,184,92,0.2);
+      animation: glow-dot 2.5s ease-in-out infinite;
+    }
+
+    @keyframes glow-dot {
+      0%, 100% { box-shadow: 0 0 0 2px rgba(92,184,92,0.2); }
+      50% { box-shadow: 0 0 0 4px rgba(92,184,92,0.12); }
+    }
+
+    #status-text {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-mid);
+      font-family: var(--mono);
+    }
+
+    #btn-power {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: #c0553a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 8px var(--shadow);
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #btn-power:active {
+      box-shadow: 0 1px 3px var(--shadow);
+      transform: scale(0.94) translateY(1px);
+    }
+
+    /* Trackpad card */
+    #trackpad-wrap {
+      flex: 1;
+      min-height: 0;
+    }
+
+    #trackpad {
+      width: 100%;
+      height: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      position: relative;
+      overflow: hidden;
+      cursor: crosshair;
+      box-shadow:
+        0 1px 0 0 rgba(255,255,255,0.8) inset,
+        0 4px 20px var(--shadow);
+    }
+
+    /* Paper texture */
+    #trackpad::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle, rgba(180,150,120,0.06) 1px, transparent 1px);
+      background-size: 16px 16px;
+      pointer-events: none;
+    }
+
+    #tp-hint {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    #tp-hint .tp-icon { opacity: 0.12; margin-bottom: 6px; }
+
+    #tp-hint p {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      letter-spacing: 0.05em;
+    }
+
+    #trackpad.active #tp-hint { opacity: 0; }
+
+    .ripple-warm {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(212,96,58,0.1);
+      width: 70px;
+      height: 70px;
+      margin-left: -35px;
+      margin-top: -35px;
+      animation: ripple-warm 0.5s ease-out forwards;
+      pointer-events: none;
+    }
+
+    @keyframes ripple-warm {
+      from { transform: scale(0.1); opacity: 1; }
+      to   { transform: scale(2.6); opacity: 0; }
+    }
+
+    /* Sliders — horizontal */
+    #sliders {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .h-slider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .h-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-mid);
+      font-family: var(--mono);
+      letter-spacing: 0.08em;
+      width: 30px;
+      flex-shrink: 0;
+    }
+
+    .h-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(180,150,120,0.2);
+      border-radius: 3px;
+      position: relative;
+      cursor: ew-resize;
+    }
+
+    .h-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      background: var(--accent);
+      border-radius: 3px;
+      transition: width 0.04s ease-out;
+    }
+
+    .h-thumb {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      box-shadow: 0 2px 6px rgba(212,96,58,0.3);
+      transition: left 0.04s ease-out, transform 0.15s;
+      pointer-events: none;
+    }
+
+    .h-track:active .h-thumb {
+      transform: translate(-50%, -50%) scale(1.15);
+    }
+
+    .h-val {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--accent);
+      font-family: var(--mono);
+      width: 36px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      flex-shrink: 0;
+      margin: 0 -4px;
+    }
+
+    /* Click buttons */
+    #click-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      flex-shrink: 0;
+      height: 72px;
+    }
+
+    .click-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      touch-action: manipulation;
+      box-shadow: 0 2px 8px var(--shadow), 0 1px 0 rgba(255,255,255,0.7) inset;
+      transition: all 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+      color: var(--text-mid);
+    }
+
+    .click-btn:hover {
+      border-color: var(--border-hi);
+      color: var(--accent);
+    }
+
+    .click-btn:active {
+      box-shadow: 0 1px 3px var(--shadow);
+      transform: scale(0.96) translateY(1px);
+    }
+
+    .click-btn span {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      font-family: var(--mono);
+    }
+
+    .click-btn svg { opacity: 0.65; transition: opacity 0.15s; }
+    .click-btn:hover svg { opacity: 1; }
+
+    @media (max-width: 500px) {
+      body { background: var(--bg); display: block; }
+      #phone {
+        width: 100%;
+        height: 100dvh;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        padding: 20px 16px env(safe-area-inset-bottom, 32px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-link">← All concepts</a>
+
+  <div id="phone">
+    <div id="topbar">
+      <span id="wordmark">Pebble<span>.</span></span>
+      <div id="status-badge">
+        <div id="status-dot"></div>
+        <span id="status-text">Connected</span>
+      </div>
+      <button id="btn-power" title="Sleep Mac">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+          <line x1="12" y1="2" x2="12" y2="12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div id="trackpad-wrap">
+      <div id="trackpad">
+        <div id="tp-hint">
+          <svg class="tp-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#7a6552" stroke-width="1.2" stroke-linecap="round">
+            <rect x="5" y="2" width="14" height="20" rx="7"/>
+            <line x1="12" y1="2" x2="12" y2="9"/>
+          </svg>
+          <p>Tap to click</p>
+          <p>Drag to move</p>
+          <p>Two-finger scroll</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="sliders">
+      <div class="h-slider" id="vol-slider">
+        <span class="h-label">Vol</span>
+        <div class="h-track" id="vol-track">
+          <div class="h-fill" id="vol-fill" style="width:60%"></div>
+          <div class="h-thumb" id="vol-thumb" style="left:60%"></div>
+        </div>
+        <span class="h-val" id="vol-val">60%</span>
+      </div>
+
+      <div class="h-slider" id="spd-slider">
+        <span class="h-label">Spd</span>
+        <div class="h-track" id="spd-track">
+          <div class="h-fill" id="spd-fill" style="width:38%"></div>
+          <div class="h-thumb" id="spd-thumb" style="left:38%"></div>
+        </div>
+        <span class="h-val" id="spd-val">2.2</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div id="click-row">
+      <button class="click-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+          <defs><clipPath id="lp"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath></defs>
+          <rect x="5" y="2" width="14" height="20" rx="7"/>
+          <line x1="12" y1="2" x2="12" y2="10"/>
+          <line x1="5" y1="10" x2="19" y2="10"/>
+          <rect x="5" y="2" width="7" height="8" fill="currentColor" opacity="0.28" stroke="none" clip-path="url(#lp)"/>
+        </svg>
+        <span>Left</span>
+      </button>
+      <button class="click-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+          <defs><clipPath id="rp"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath></defs>
+          <rect x="5" y="2" width="14" height="20" rx="7"/>
+          <line x1="12" y1="2" x2="12" y2="10"/>
+          <line x1="5" y1="10" x2="19" y2="10"/>
+          <rect x="12" y="2" width="7" height="8" fill="currentColor" opacity="0.28" stroke="none" clip-path="url(#rp)"/>
+        </svg>
+        <span>Right</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ── Trackpad ──────────────────────────────────────
+    const tp = document.getElementById('trackpad');
+
+    tp.addEventListener('mouseenter', () => tp.classList.add('active'));
+    tp.addEventListener('mouseleave', () => tp.classList.remove('active'));
+
+    function addRipple(x, y) {
+      const d = document.createElement('div');
+      d.className = 'ripple-warm';
+      d.style.left = x + 'px';
+      d.style.top  = y + 'px';
+      tp.appendChild(d);
+      d.addEventListener('animationend', () => d.remove());
+    }
+
+    tp.addEventListener('click', e => {
+      const r = tp.getBoundingClientRect();
+      addRipple(e.clientX - r.left, e.clientY - r.top);
+    });
+
+    tp.addEventListener('touchstart', e => {
+      tp.classList.add('active');
+      const r = tp.getBoundingClientRect();
+      addRipple(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top);
+    }, { passive: true });
+
+    tp.addEventListener('touchend', () => tp.classList.remove('active'));
+
+    // ── Horizontal sliders ────────────────────────────
+    function makeHSlider(trackId, fillId, thumbId, valId, opts) {
+      const track = document.getElementById(trackId);
+      const fill  = document.getElementById(fillId);
+      const thumb = document.getElementById(thumbId);
+      const label = document.getElementById(valId);
+      let dragging = false;
+
+      function getPct(clientX) {
+        const r = track.getBoundingClientRect();
+        return Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+      }
+
+      function update(pct) {
+        const pctPx = (pct * 100) + '%';
+        fill.style.width  = pctPx;
+        thumb.style.left  = pctPx;
+        label.textContent = opts.format(pct);
+      }
+
+      track.addEventListener('mousedown', e => { dragging = true; update(getPct(e.clientX)); });
+      document.addEventListener('mousemove', e => { if (dragging) update(getPct(e.clientX)); });
+      document.addEventListener('mouseup', () => dragging = false);
+
+      track.addEventListener('touchstart', e => { dragging = true; update(getPct(e.touches[0].clientX)); }, { passive: true });
+      document.addEventListener('touchmove', e => { if (dragging) update(getPct(e.touches[0].clientX)); }, { passive: true });
+      document.addEventListener('touchend', () => dragging = false);
+    }
+
+    makeHSlider('vol-track', 'vol-fill', 'vol-thumb', 'vol-val', {
+      format: p => Math.round(p * 100) + '%'
+    });
+    makeHSlider('spd-track', 'spd-fill', 'spd-thumb', 'spd-val', {
+      format: p => (0.5 + p * 4.5).toFixed(1)
+    });
+
+    // ── Button feedback ───────────────────────────────
+    document.querySelectorAll('.click-btn, #btn-power').forEach(btn => {
+      btn.addEventListener('touchstart', () => {
+        btn.style.transform = 'scale(0.95) translateY(1px)';
+      }, { passive: true });
+      btn.addEventListener('touchend', () => {
+        btn.style.transform = '';
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Relay — Concept 01: Obsidian</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0c0c0e;
+      --surface: rgba(255,255,255,0.038);
+      --surface-hi: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.065);
+      --border-hi: rgba(255,255,255,0.1);
+      --text: #ececec;
+      --text-dim: #4a4a55;
+      --text-mid: #888;
+      --accent: #10b981;
+      --accent-bg: rgba(16,185,129,0.1);
+      --accent-border: rgba(16,185,129,0.22);
+      --danger: #f87171;
+      --r: 20px;
+      --font: 'Outfit', sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    html, body {
+      height: 100%;
+      background: #060608;
+      color: var(--text);
+      font-family: var(--font);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    /* Desktop: show phone frame */
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .back-link {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-family: var(--mono);
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: var(--accent); }
+
+    #phone {
+      width: 390px;
+      height: 844px;
+      background: var(--bg);
+      border-radius: 48px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 18px 32px;
+      gap: 12px;
+      position: relative;
+      border: 1px solid rgba(255,255,255,0.07);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.03) inset,
+        0 60px 120px rgba(0,0,0,0.8),
+        0 0 60px rgba(16,185,129,0.04);
+    }
+
+    /* Subtle noise overlay */
+    #phone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Top bar */
+    #topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      height: 44px;
+      position: relative;
+      z-index: 2;
+    }
+
+    #wordmark {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    #status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 20px;
+      padding: 5px 12px 5px 8px;
+    }
+
+    #status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: breathe 2.8s ease-in-out infinite;
+    }
+
+    @keyframes breathe {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+      50% { opacity: 0.65; box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
+    }
+
+    #status-text {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--accent);
+      font-family: var(--mono);
+      letter-spacing: 0.06em;
+    }
+
+    #btn-power {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.2);
+      color: var(--danger);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      touch-action: manipulation;
+    }
+
+    #btn-power:active {
+      background: rgba(248,113,113,0.2);
+      transform: scale(0.92);
+      border-color: rgba(248,113,113,0.4);
+    }
+
+    /* Main section */
+    #main {
+      flex: 1;
+      display: flex;
+      gap: 10px;
+      min-height: 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Sliders column */
+    #sliders {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 50px;
+      flex-shrink: 0;
+    }
+
+    .pill-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .pill-label {
+      font-size: 8px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      font-family: var(--mono);
+    }
+
+    .pill-track {
+      flex: 1;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 25px;
+      position: relative;
+      overflow: hidden;
+      cursor: ns-resize;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: border-color 0.2s;
+    }
+
+    .pill-track:hover {
+      border-color: var(--border-hi);
+    }
+
+    .pill-track.dragging {
+      border-color: rgba(16,185,129,0.3);
+    }
+
+    .pill-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      border-radius: 25px;
+      transition: height 0.04s ease-out;
+    }
+
+    .pill-fill-vol {
+      background: linear-gradient(to top,
+        rgba(16,185,129,0.5) 0%,
+        rgba(16,185,129,0.12) 70%,
+        transparent 100%);
+    }
+
+    .pill-fill-spd {
+      background: linear-gradient(to top,
+        rgba(255,255,255,0.24) 0%,
+        rgba(255,255,255,0.05) 70%,
+        transparent 100%);
+    }
+
+    .pill-icon {
+      position: absolute;
+      top: 13px;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0.2;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .pill-val {
+      position: absolute;
+      bottom: 9px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 9px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.35);
+      font-family: var(--mono);
+      z-index: 2;
+      pointer-events: none;
+      letter-spacing: -0.01em;
+    }
+
+    /* Trackpad */
+    #trackpad {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      position: relative;
+      overflow: hidden;
+      cursor: none;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      transition: border-color 0.2s;
+    }
+
+    #trackpad:hover, #trackpad.active {
+      border-color: rgba(255,255,255,0.09);
+    }
+
+    /* Subtle gradient glow at bottom */
+    #trackpad::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40%;
+      background: radial-gradient(ellipse at 50% 100%, rgba(16,185,129,0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Dot grid texture */
+    #trackpad::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 20px 20px;
+      pointer-events: none;
+    }
+
+    #tp-hint {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 1;
+    }
+
+    #tp-hint svg { opacity: 0.12; }
+
+    #tp-hint span {
+      font-size: 9.5px;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-family: var(--mono);
+    }
+
+    #trackpad.active #tp-hint { opacity: 0; }
+
+    /* Cursor dot */
+    #cursor {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1.5px solid var(--accent);
+      transform: translate(-50%, -50%) scale(0);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 0.2s;
+      pointer-events: none;
+      z-index: 3;
+      opacity: 0;
+    }
+
+    #cursor.inner {
+      width: 4px;
+      height: 4px;
+      background: var(--accent);
+      border: none;
+    }
+
+    #trackpad.active #cursor {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+
+    /* Ripple */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(16,185,129,0.12);
+      width: 64px;
+      height: 64px;
+      margin-left: -32px;
+      margin-top: -32px;
+      animation: ripple-out 0.45s ease-out forwards;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    @keyframes ripple-out {
+      from { transform: scale(0.2); opacity: 1; }
+      to { transform: scale(2.4); opacity: 0; }
+    }
+
+    /* Bottom click buttons */
+    #click-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      flex-shrink: 0;
+      height: 78px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .click-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      color: var(--text);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .click-btn:hover {
+      background: var(--surface-hi);
+      border-color: var(--border-hi);
+    }
+
+    .click-btn:active {
+      background: var(--surface-hi);
+      transform: scale(0.95);
+      border-color: var(--border-hi);
+    }
+
+    .click-btn span {
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      font-family: var(--mono);
+    }
+
+    .click-btn svg {
+      opacity: 0.5;
+      transition: opacity 0.15s;
+    }
+
+    .click-btn:active svg, .click-btn:hover svg {
+      opacity: 0.8;
+    }
+
+    /* Responsive: fill screen on mobile */
+    @media (max-width: 500px) {
+      body { background: var(--bg); padding: 0; display: block; }
+      #phone {
+        width: 100%;
+        height: 100dvh;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        padding: 20px 16px env(safe-area-inset-bottom, 28px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-link">← All concepts</a>
+
+  <div id="phone">
+    <div id="topbar">
+      <span id="wordmark">Relay</span>
+      <div id="status-pill">
+        <div id="status-dot"></div>
+        <span id="status-text">LIVE</span>
+      </div>
+      <button id="btn-power" title="Sleep Mac">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+          <line x1="12" y1="2" x2="12" y2="12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div id="main">
+      <!-- Sliders -->
+      <div id="sliders">
+        <div class="pill-wrap">
+          <span class="pill-label">Vol</span>
+          <div class="pill-track" id="vol-track">
+            <div class="pill-fill pill-fill-vol" id="vol-fill" style="height:60%"></div>
+            <svg class="pill-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+            <span class="pill-val" id="vol-val">60%</span>
+          </div>
+        </div>
+
+        <div class="pill-wrap">
+          <span class="pill-label">Spd</span>
+          <div class="pill-track" id="spd-track">
+            <div class="pill-fill pill-fill-spd" id="spd-fill" style="height:42%"></div>
+            <svg class="pill-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            <span class="pill-val" id="spd-val">2.2</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trackpad -->
+      <div id="trackpad">
+        <div id="tp-hint">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.2" stroke-linecap="round">
+            <rect x="5" y="2" width="14" height="20" rx="7"/>
+            <line x1="12" y1="2" x2="12" y2="9"/>
+          </svg>
+          <span>Tap to click</span>
+          <span>Drag to move</span>
+          <span>2-finger scroll</span>
+        </div>
+        <div id="cursor"></div>
+      </div>
+    </div>
+
+    <!-- Click buttons -->
+    <div id="click-row">
+      <button class="click-btn" id="btn-left">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <defs><clipPath id="lc1"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath></defs>
+          <rect x="5" y="2" width="14" height="20" rx="7"/>
+          <line x1="12" y1="2" x2="12" y2="10"/>
+          <line x1="5" y1="10" x2="19" y2="10"/>
+          <rect x="5" y="2" width="7" height="8" fill="currentColor" opacity="0.3" stroke="none" clip-path="url(#lc1)"/>
+        </svg>
+        <span>Left</span>
+      </button>
+      <button class="click-btn" id="btn-right">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <defs><clipPath id="rc1"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath></defs>
+          <rect x="5" y="2" width="14" height="20" rx="7"/>
+          <line x1="12" y1="2" x2="12" y2="10"/>
+          <line x1="5" y1="10" x2="19" y2="10"/>
+          <rect x="12" y="2" width="7" height="8" fill="currentColor" opacity="0.3" stroke="none" clip-path="url(#rc1)"/>
+        </svg>
+        <span>Right</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ── Trackpad ─────────────────────────────────────
+    const tp = document.getElementById('trackpad');
+    const cursor = document.getElementById('cursor');
+
+    tp.addEventListener('mousemove', e => {
+      const r = tp.getBoundingClientRect();
+      cursor.style.left = (e.clientX - r.left) + 'px';
+      cursor.style.top  = (e.clientY - r.top) + 'px';
+    });
+
+    tp.addEventListener('mouseenter', () => tp.classList.add('active'));
+    tp.addEventListener('mouseleave', () => tp.classList.remove('active'));
+
+    function addRipple(x, y) {
+      const d = document.createElement('div');
+      d.className = 'ripple';
+      d.style.left = x + 'px';
+      d.style.top  = y + 'px';
+      tp.appendChild(d);
+      d.addEventListener('animationend', () => d.remove());
+    }
+
+    tp.addEventListener('click', e => {
+      const r = tp.getBoundingClientRect();
+      addRipple(e.clientX - r.left, e.clientY - r.top);
+    });
+
+    tp.addEventListener('touchstart', e => {
+      tp.classList.add('active');
+      const r = tp.getBoundingClientRect();
+      addRipple(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top);
+    }, { passive: true });
+
+    tp.addEventListener('touchend', () => tp.classList.remove('active'));
+
+    // ── Sliders ──────────────────────────────────────
+    function makeSlider(trackId, fillId, valId, opts) {
+      const track = document.getElementById(trackId);
+      const fill  = document.getElementById(fillId);
+      const label = document.getElementById(valId);
+      let dragging = false;
+
+      function getPct(clientY) {
+        const r = track.getBoundingClientRect();
+        return Math.max(0, Math.min(1, 1 - (clientY - r.top) / r.height));
+      }
+
+      function update(pct) {
+        fill.style.height = (pct * 100) + '%';
+        label.textContent = opts.format(pct);
+      }
+
+      track.addEventListener('mousedown', e => {
+        dragging = true;
+        track.classList.add('dragging');
+        update(getPct(e.clientY));
+      });
+      document.addEventListener('mousemove', e => { if (dragging) update(getPct(e.clientY)); });
+      document.addEventListener('mouseup', () => { dragging = false; track.classList.remove('dragging'); });
+
+      track.addEventListener('touchstart', e => {
+        dragging = true;
+        update(getPct(e.touches[0].clientY));
+      }, { passive: true });
+      document.addEventListener('touchmove', e => { if (dragging) update(getPct(e.touches[0].clientY)); }, { passive: true });
+      document.addEventListener('touchend', () => dragging = false);
+    }
+
+    makeSlider('vol-track', 'vol-fill', 'vol-val', {
+      format: p => Math.round(p * 100) + '%'
+    });
+    makeSlider('spd-track', 'spd-fill', 'spd-val', {
+      format: p => (0.5 + p * 4.5).toFixed(1)
+    });
+
+    // ── Button feedback ───────────────────────────────
+    document.querySelectorAll('.click-btn, #btn-power').forEach(btn => {
+      btn.addEventListener('touchstart', () => btn.style.transform = 'scale(0.94)', { passive: true });
+      btn.addEventListener('touchend', () => btn.style.transform = '');
+    });
+  </script>
+</body>
+</html>

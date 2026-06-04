@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Steel — Concept 10: Industrial Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #1a1c1e;
+      --bg2: #141618;
+      --surface: rgba(255,255,255,0.04);
+      --surface-hi: rgba(255,255,255,0.07);
+      --border: rgba(255,255,255,0.09);
+      --border-hi: rgba(255,255,255,0.18);
+      --text: #d8dde3;
+      --text-mid: #7a8290;
+      --text-dim: #3e444c;
+      --silver: #9aa4b0;
+      --accent: #5b9bd6;
+      --accent-bg: rgba(91,155,214,0.08);
+      --accent-border: rgba(91,155,214,0.2);
+      --danger: #d65b5b;
+      --r: 10px;
+      --font: 'IBM Plex Sans', sans-serif;
+      --mono: 'IBM Plex Mono', monospace;
+    }
+
+    html, body {
+      height: 100%;
+      background: #0e1012;
+      color: var(--text);
+      font-family: var(--font);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .back-link {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-family: var(--mono);
+      transition: color 0.15s;
+    }
+    .back-link:hover { color: var(--silver); }
+
+    #phone {
+      width: 390px;
+      height: 844px;
+      background: var(--bg);
+      border-radius: 48px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      gap: 0;
+      position: relative;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.03) inset,
+        0 60px 120px rgba(0,0,0,0.9),
+        0 1px 0 rgba(255,255,255,0.06) inset;
+    }
+
+    /* Brushed metal texture */
+    #phone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background-image: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 3px,
+        rgba(255,255,255,0.006) 3px,
+        rgba(255,255,255,0.006) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Inner glow edge */
+    #phone::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.2) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Header bar — dark panel */
+    #header {
+      flex-shrink: 0;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 22px 16px;
+      position: relative;
+      z-index: 2;
+    }
+
+    #header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 36px;
+    }
+
+    #wordmark-group { display: flex; align-items: center; gap: 10px; }
+
+    #wordmark-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.04) 100%);
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #wordmark {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--text);
+    }
+
+    #status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 4px;
+      padding: 4px 10px 4px 8px;
+    }
+
+    #status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse-steel 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-steel {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    #status-text {
+      font-size: 9px;
+      font-weight: 500;
+      color: var(--accent);
+      font-family: var(--mono);
+      letter-spacing: 0.1em;
+    }
+
+    #btn-power {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: rgba(214,91,91,0.07);
+      border: 1px solid rgba(214,91,91,0.18);
+      color: var(--danger);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      touch-action: manipulation;
+    }
+
+    #btn-power:active { background: rgba(214,91,91,0.18); transform: scale(0.93); }
+
+    /* Metrics strip */
+    #metrics {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .metric {
+      flex: 1;
+      padding: 10px 16px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .metric:last-child { border-right: none; }
+
+    .metric-val {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      font-family: var(--mono);
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .metric-lbl {
+      font-size: 8px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      font-family: var(--mono);
+    }
+
+    /* Body */
+    #body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-height: 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    #main {
+      flex: 1;
+      display: flex;
+      gap: 0;
+      min-height: 0;
+    }
+
+    #sliders {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      width: 56px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+    }
+
+    .pill-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pill-wrap:last-child { border-bottom: none; }
+
+    .pill-label {
+      padding: 8px 0 0 0;
+      text-align: center;
+      font-size: 7px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      flex-shrink: 0;
+    }
+
+    .pill-track {
+      flex: 1;
+      width: 100%;
+      background: transparent;
+      position: relative;
+      overflow: hidden;
+      cursor: ns-resize;
+      margin: 6px 0 8px;
+      padding: 0 10px;
+    }
+
+    .pill-track-inner {
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .pill-track.dragging .pill-track-inner { border-color: var(--border-hi); }
+
+    .pill-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      transition: height 0.04s ease-out;
+    }
+
+    .pill-fill-vol {
+      background: linear-gradient(to top,
+        rgba(91,155,214,0.5) 0%,
+        rgba(91,155,214,0.1) 60%,
+        transparent 100%);
+    }
+
+    .pill-fill-spd {
+      background: linear-gradient(to top,
+        rgba(154,164,176,0.4) 0%,
+        rgba(154,164,176,0.08) 60%,
+        transparent 100%);
+    }
+
+    .pill-val {
+      position: absolute;
+      bottom: 7px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 8px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.25);
+      font-family: var(--mono);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    #trackpad {
+      flex: 1;
+      background: rgba(0,0,0,0.15);
+      position: relative;
+      overflow: hidden;
+      cursor: none;
+      transition: background 0.2s;
+    }
+
+    #trackpad.active { background: rgba(0,0,0,0.1); }
+
+    /* Measurement grid */
+    #trackpad::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+      background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px;
+      pointer-events: none;
+    }
+
+    #tp-hint {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 1;
+    }
+
+    #tp-hint svg { opacity: 0.07; }
+
+    #tp-hint span {
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-family: var(--mono);
+    }
+
+    #trackpad.active #tp-hint { opacity: 0; }
+
+    #cursor {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 0;
+      border: 1.5px solid var(--silver);
+      transform: translate(-50%, -50%) scale(0);
+      transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s;
+      pointer-events: none;
+      z-index: 3;
+      opacity: 0;
+    }
+
+    #trackpad.active #cursor {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0.7;
+    }
+
+    .ripple {
+      position: absolute;
+      border-radius: 0;
+      border: 1px solid rgba(154,164,176,0.3);
+      width: 60px;
+      height: 60px;
+      margin-left: -30px;
+      margin-top: -30px;
+      animation: ripple-out 0.4s ease-out forwards;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    @keyframes ripple-out {
+      from { transform: scale(0.2); opacity: 1; }
+      to { transform: scale(2.4); opacity: 0; }
+    }
+
+    /* Bottom click row */
+    #click-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      flex-shrink: 0;
+      height: 72px;
+      border-top: 1px solid var(--border);
+      position: relative;
+      z-index: 2;
+    }
+
+    .click-btn {
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: background 0.12s;
+      color: var(--text);
+    }
+
+    .click-btn:last-child { border-right: none; }
+    .click-btn:hover { background: rgba(255,255,255,0.03); }
+    .click-btn:active { background: rgba(255,255,255,0.06); transform: scale(0.97); }
+
+    .click-btn span {
+      font-size: 8px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      font-family: var(--mono);
+    }
+
+    .click-btn svg { opacity: 0.35; transition: opacity 0.15s; }
+    .click-btn:hover svg, .click-btn:active svg { opacity: 0.6; }
+
+    @media (max-width: 500px) {
+      body { background: var(--bg); padding: 0; display: block; }
+      #phone { width: 100%; height: 100dvh; border-radius: 0; border: none; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-link">← All concepts</a>
+
+  <div id="phone">
+    <div id="header">
+      <div id="header-row">
+        <div id="wordmark-group">
+          <div id="wordmark-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/>
+              <path d="M8 21h8m-4-4v4"/>
+            </svg>
+          </div>
+          <span id="wordmark">Steel</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div id="status-pill">
+            <div id="status-dot"></div>
+            <span id="status-text">ACTIVE</span>
+          </div>
+          <button id="btn-power" title="Sleep Mac">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+              <line x1="12" y1="2" x2="12" y2="12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="metrics">
+      <div class="metric">
+        <span class="metric-val" id="m-vol">60</span>
+        <span class="metric-lbl">Volume</span>
+      </div>
+      <div class="metric">
+        <span class="metric-val" id="m-spd">2.2</span>
+        <span class="metric-lbl">Speed</span>
+      </div>
+      <div class="metric">
+        <span class="metric-val" style="color: var(--accent);">ON</span>
+        <span class="metric-lbl">Display</span>
+      </div>
+    </div>
+
+    <div id="body">
+      <div id="main">
+        <div id="sliders">
+          <div class="pill-wrap">
+            <span class="pill-label">Vol</span>
+            <div class="pill-track" id="vol-track">
+              <div class="pill-track-inner">
+                <div class="pill-fill pill-fill-vol" id="vol-fill" style="height:60%"></div>
+                <span class="pill-val" id="vol-val">60</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pill-wrap">
+            <span class="pill-label">Spd</span>
+            <div class="pill-track" id="spd-track">
+              <div class="pill-track-inner">
+                <div class="pill-fill pill-fill-spd" id="spd-fill" style="height:42%"></div>
+                <span class="pill-val" id="spd-val">2.2</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="trackpad">
+          <div id="tp-hint">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1" stroke-linecap="round">
+              <rect x="5" y="2" width="14" height="20" rx="7"/>
+              <line x1="12" y1="2" x2="12" y2="9"/>
+            </svg>
+            <span>Tap to click</span>
+            <span>Drag to move</span>
+          </div>
+          <div id="cursor"></div>
+        </div>
+      </div>
+
+      <div id="click-row">
+        <button class="click-btn" id="btn-left">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <defs><clipPath id="lc10"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath></defs>
+            <rect x="5" y="2" width="14" height="20" rx="7"/>
+            <line x1="12" y1="2" x2="12" y2="10"/>
+            <line x1="5" y1="10" x2="19" y2="10"/>
+            <rect x="5" y="2" width="7" height="8" fill="currentColor" opacity="0.3" stroke="none" clip-path="url(#lc10)"/>
+          </svg>
+          <span>Left Click</span>
+        </button>
+        <button class="click-btn" id="btn-right">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <defs><clipPath id="rc10"><rect x="5" y="2" width="14" height="20" rx="7"/></clipPath></defs>
+            <rect x="5" y="2" width="14" height="20" rx="7"/>
+            <line x1="12" y1="2" x2="12" y2="10"/>
+            <line x1="5" y1="10" x2="19" y2="10"/>
+            <rect x="12" y="2" width="7" height="8" fill="currentColor" opacity="0.3" stroke="none" clip-path="url(#rc10)"/>
+          </svg>
+          <span>Right Click</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tp = document.getElementById('trackpad');
+    const cursor = document.getElementById('cursor');
+
+    tp.addEventListener('mousemove', e => {
+      const r = tp.getBoundingClientRect();
+      cursor.style.left = (e.clientX - r.left) + 'px';
+      cursor.style.top = (e.clientY - r.top) + 'px';
+    });
+
+    tp.addEventListener('mouseenter', () => tp.classList.add('active'));
+    tp.addEventListener('mouseleave', () => tp.classList.remove('active'));
+
+    function addRipple(x, y) {
+      const d = document.createElement('div');
+      d.className = 'ripple';
+      d.style.left = x + 'px';
+      d.style.top = y + 'px';
+      tp.appendChild(d);
+      d.addEventListener('animationend', () => d.remove());
+    }
+
+    tp.addEventListener('click', e => {
+      const r = tp.getBoundingClientRect();
+      addRipple(e.clientX - r.left, e.clientY - r.top);
+    });
+
+    tp.addEventListener('touchstart', e => {
+      tp.classList.add('active');
+      const r = tp.getBoundingClientRect();
+      addRipple(e.touches[0].clientX - r.left, e.touches[0].clientY - r.top);
+    }, { passive: true });
+
+    tp.addEventListener('touchend', () => tp.classList.remove('active'));
+
+    function makeSlider(trackId, fillId, valId, metricId, opts) {
+      const track = document.getElementById(trackId);
+      const fill = document.getElementById(fillId);
+      const label = document.getElementById(valId);
+      const metric = metricId ? document.getElementById(metricId) : null;
+      let dragging = false;
+
+      function getPct(clientY) {
+        const inner = track.querySelector('.pill-track-inner') || track;
+        const r = inner.getBoundingClientRect();
+        return Math.max(0, Math.min(1, 1 - (clientY - r.top) / r.height));
+      }
+
+      function update(pct) {
+        fill.style.height = (pct * 100) + '%';
+        const val = opts.format(pct);
+        label.textContent = val;
+        if (metric) metric.textContent = val;
+      }
+
+      track.addEventListener('mousedown', e => { dragging = true; track.classList.add('dragging'); update(getPct(e.clientY)); });
+      document.addEventListener('mousemove', e => { if (dragging) update(getPct(e.clientY)); });
+      document.addEventListener('mouseup', () => { dragging = false; track.classList.remove('dragging'); });
+      track.addEventListener('touchstart', e => { dragging = true; update(getPct(e.touches[0].clientY)); }, { passive: true });
+      document.addEventListener('touchmove', e => { if (dragging) update(getPct(e.touches[0].clientY)); }, { passive: true });
+      document.addEventListener('touchend', () => dragging = false);
+    }
+
+    makeSlider('vol-track', 'vol-fill', 'vol-val', 'm-vol', { format: p => Math.round(p * 100) });
+    makeSlider('spd-track', 'spd-fill', 'spd-val', 'm-spd', { format: p => (0.5 + p * 4.5).toFixed(1) });
+
+    document.querySelectorAll('.click-btn, #btn-power').forEach(btn => {
+      btn.addEventListener('touchstart', () => btn.style.transform = 'scale(0.94)', { passive: true });
+      btn.addEventListener('touchend', () => btn.style.transform = '');
+    });
+  </script>
+</body>
+</html>

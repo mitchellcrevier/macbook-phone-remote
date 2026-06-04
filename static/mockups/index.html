@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mac Remote — UI Concepts</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #09090b;
+      color: #e4e4e7;
+      font-family: 'Sora', sans-serif;
+      min-height: 100dvh;
+      padding: 60px 32px;
+    }
+
+    header {
+      margin-bottom: 64px;
+    }
+
+    .overline {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #52525b;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 600;
+      color: #fafafa;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    h1 span {
+      color: #60a5fa;
+    }
+
+    .subtitle {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #71717a;
+      font-weight: 300;
+      max-width: 400px;
+      line-height: 1.6;
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #3f3f46;
+      margin-bottom: 16px;
+      margin-top: 48px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #1c1c1f;
+    }
+
+    .section-label:first-of-type { margin-top: 0; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      border: 1px solid #27272a;
+      border-radius: 16px;
+      overflow: hidden;
+      text-decoration: none;
+      display: block;
+      transition: border-color 0.2s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .card:hover {
+      border-color: #3f3f46;
+      transform: translateY(-2px);
+    }
+
+    .preview {
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preview-1 { background: linear-gradient(135deg, #0c0c0e 0%, #0f1c16 100%); }
+    .preview-2 { background: linear-gradient(135deg, #f4ede3 0%, #e8d5c0 100%); }
+    .preview-3 { background: linear-gradient(135deg, #0d1117 0%, #0d2010 100%); }
+    .preview-4 { background: linear-gradient(135deg, #dbd5ca 0%, #cec5b8 100%); }
+    .preview-5 { background: linear-gradient(135deg, #09090b 0%, #111114 100%); }
+
+    .preview-label {
+      position: absolute;
+      bottom: 12px;
+      left: 16px;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    .card-info {
+      padding: 20px;
+      background: #111113;
+      border-top: 1px solid #27272a;
+    }
+
+    .card-num {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #52525b;
+      margin-bottom: 4px;
+    }
+
+    .card-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fafafa;
+      margin-bottom: 4px;
+    }
+
+    .card-desc {
+      font-size: 12px;
+      color: #71717a;
+      line-height: 1.5;
+      font-weight: 300;
+    }
+
+    .card-tag {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid;
+    }
+
+    .tag-emerald { color: #10b981; border-color: rgba(16,185,129,0.25); background: rgba(16,185,129,0.07); }
+    .tag-coral   { color: #d4603a; border-color: rgba(212,96,58,0.25);  background: rgba(212,96,58,0.07);  }
+    .tag-green   { color: #3fb950; border-color: rgba(63,185,80,0.25);  background: rgba(63,185,80,0.07);  }
+    .tag-orange  { color: #f4711e; border-color: rgba(244,113,30,0.25); background: rgba(244,113,30,0.07); }
+    .tag-blue    { color: #60a5fa; border-color: rgba(96,165,250,0.25); background: rgba(96,165,250,0.07); }
+    .tag-violet  { color: #a78bfa; border-color: rgba(167,139,250,0.25); background: rgba(167,139,250,0.07); }
+    .tag-cream   { color: #c0392b; border-color: rgba(192,57,43,0.25); background: rgba(192,57,43,0.07); }
+    .tag-pink    { color: #ff2d9b; border-color: rgba(255,45,155,0.25); background: rgba(255,45,155,0.07); }
+    .tag-forest  { color: #7bc25a; border-color: rgba(123,194,90,0.25); background: rgba(123,194,90,0.07); }
+    .tag-silver  { color: #9aa4b0; border-color: rgba(154,164,176,0.25); background: rgba(154,164,176,0.07); }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="overline">Mac Remote — Design Review</p>
+    <h1>Ten UI <span>Concepts</span></h1>
+    <p class="subtitle">Ten distinct directions for commercializing the Mac Remote. Each targets a different user and market position. Click to open the full mockup.</p>
+  </header>
+
+  <p class="section-label">Batch 01 — Original Five</p>
+  <div class="grid">
+    <a href="1-relay.html" class="card">
+      <div class="preview preview-1">
+        <div style="text-align:center;">
+          <div style="width:48px;height:80px;border-radius:14px;border:1.5px solid rgba(16,185,129,0.3);background:rgba(16,185,129,0.06);margin:0 auto 8px;"></div>
+          <div style="width:80px;height:3px;border-radius:2px;background:rgba(16,185,129,0.4);margin:0 auto;"></div>
+        </div>
+        <span class="preview-label" style="color:#10b981;">Relay</span>
+      </div>
+      <div class="card-info">
+        <p class="card-num">Concept 01</p>
+        <p class="card-name">Relay</p>
+        <p class="card-desc">Premium dark glass. Apple-adjacent aesthetic with emerald accents. Targets design-conscious users.</p>
+        <span class="card-tag tag-emerald">Premium Dark</span>
+      </div>
+    </a>
+
+    <a href="2-pebble.html" class="card">
+      <div class="preview preview-2">
+        <div style="text-align:center;">
+          <div style="width:80px;height:48px;border-radius:16px;border:1.5px solid rgba(212,96,58,0.3);background:rgba(212,96,58,0.08);margin:0 auto 8px;"></div>
+          <div style="width:60px;height:3px;border-radius:2px;background:rgba(212,96,58,0.5);margin:0 auto;"></div>
+        </div>
+        <span class="preview-label" style="color:#d4603a;">Pebble</span>
+      </div>
+      <div class="card-info">
+        <p class="card-num">Concept 02</p>
+        <p class="card-name">Pebble</p>
+        <p class="card-desc">Warm editorial light mode. Cream and terracotta. Feels like a well-designed iOS utility app.</p>
+        <span class="card-tag tag-coral">Warm Editorial</span>
+      </div>
+    </a>
+
+    <a href="3-terminal.html" class="card">
+      <div class="preview preview-3">
+        <div style="text-align:center;font-family:monospace;font-size:11px;color:#3fb950;">
+          <div style="opacity:0.7;">$ connect --host local</div>
+          <div style="margin:4px 0;">● CONNECTED</div>
+          <div style="opacity:0.4;">▌</div>
+        </div>
+        <span class="preview-label" style="color:#3fb950;">MacD</span>
+      </div>
+      <div class="card-info">
+        <p class="card-num">Concept 03</p>
+        <p class="card-name">MacD</p>
+        <p class="card-desc">Developer terminal aesthetic. Monospace everywhere. Targets power users who live in the command line.</p>
+        <span class="card-tag tag-green">Terminal / Dev</span>
+      </div>
+    </a>
+
+    <a href="4-tap.html" class="card">
+      <div class="preview preview-4">
+        <div style="text-align:center;">
+          <div style="width:64px;height:64px;border-radius:20px;background:#dbd5ca;box-shadow:5px 5px 12px rgba(0,0,0,0.15),-4px -4px 10px rgba(255,255,255,0.7);margin:0 auto;"></div>
+        </div>
+        <span class="preview-label" style="color:#f4711e;">Tap</span>
+      </div>
+      <div class="card-info">
+        <p class="card-num">Concept 04</p>
+        <p class="card-name">Tap</p>
+        <p class="card-desc">Soft 3D clay / neomorphic tactile feel. Warm stone tones. The most consumer-friendly, physical direction.</p>
+        <span class="card-tag tag-orange">Clay / Tactile</span>
+      </div>
+    </a>
+
+    <a href="5-ctrl.html" class="card">
+      <div class="preview preview-5">
+        <div style="text-align:center;width:80%;margin:0 auto;">
+          <div style="height:1px;background:rgba(255,255,255,0.08);margin-bottom:12px;"></div>
+          <div style="height:1px;background:rgba(96,165,250,0.3);margin-bottom:12px;"></div>
+          <div style="height:1px;background:rgba(255,255,255,0.05);"></div>
+        </div>
+        <span class="preview-label" style="color:#60a5fa;">Ctrl</span>
+      </div>
+      <div class="card-info">
+        <p class="card-num">Concept 05</p>
+        <p class="card-name">Ctrl</p>
+        <p class="card-desc">Brutally minimal. Linear/Vercel-inspired. No cards, dividers only. For productivity-focused power users.</p>
+        <span class="card-tag tag-blue">Ultra Minimal</span>
+      </div>
+    </a>
+  </div>
+
+  <p class="section-label">Batch 02 — New Five</p>
+  <div class="grid">
+    <a href="6-orbit.html" class="card">
+      <div class="preview" style="background: linear-gradient(135deg, #06061a 0%, #0e0820 100%);">
+        <div style="text-align:center;">
+          <div style="width:52px;height:52px;border-radius:50%;border:1px solid rgba(167,139,250,0.3);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;">
+            <div style="width:10px;height:10px;border-radius:50%;background:rgba(34,211,238,0.8);box-shadow:0 0 10px rgba(34,211,238,0.6);"></div>
+          </div>
+          <div style="width:70px;height:1px;background:linear-gradient(90deg,transparent,rgba(167,139,250,0.5),transparent);margin:0 auto;"></div>
+        </div>
+        <span class="preview-label" style="color:#a78bfa;">Orbit</span>
+      </div>
+      <div class="card-info">
+        <p class="card-num">Concept 06</p>
+        <p class="card-name">Orbit</p>
+        <p class="card-desc">Mission control aesthetic. Deep space navy with violet and cyan accents. Star field texture and crosshair grid.</p>
+        <span class="card-tag tag-violet">Mission Control</span>
+      </div>
+    </a>
+
+    <a href="7-linen.html" class="card">
+      <div class="preview" style="background: linear-gradient(135deg, #f5f0e6 0%, #ede7da 100%);">
+        <div style="text-align:center;">
+          <div style="font-family:'Georgia',serif;color:#1a1208;">
+            <div style="font-size:22px;font-weight:700;letter-spacing:-0.01em;line-height:1;margin-bottom:6px;">Linen</div>
+            <div style="width:80px;height:2px;background:#1a1208;margin:0 auto 6px;"></div>
+            <div style="font-size:8px;letter-spacing:0.2em;color:#a89070;">MAC REMOTE</div>
+          </div>
+        </div>
+        <span class="preview-label" style="color:#c0392b;">Linen</span>
+      </div>
+      <div class="card-info">
+        <p class="card-num">Concept 07</p>
+        <p class="card-name">Linen</p>
+        <p class="card-desc">Old editorial serif. Cream paper, ruled lines, newspaper red accents. Classic and timeless.</p>
+        <span class="card-tag tag-cream">Old Editorial</span>
+      </div>
+    </a>
+
+    <a href="8-neon.html" class="card">
+      <div class="preview" style="background: linear-gradient(135deg, #080412 0%, #0e0820 100%);">
+        <div style="text-align:center;">
+          <div style="font-family:monospace;font-size:20px;font-weight:700;letter-spacing:0.15em;color:#ff2d9b;text-shadow:0 0 14px rgba(255,45,155,0.7);">NEON</div>
+          <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,45,155,0.5),rgba(0,245,255,0.5),transparent);margin:8px auto;width:80px;"></div>
+          <div style="font-size:9px;letter-spacing:0.1em;color:rgba(0,245,255,0.7);font-family:monospace;">ONLINE</div>
+        </div>
+        <span class="preview-label" style="color:#ff2d9b;">Neon</span>
+      </div>
+      <div class="card-info">
+        <p class="card-num">Concept 08</p>
+        <p class="card-name">Neon</p>
+        <p class="card-desc">Cyberpunk synthwave. Hot pink and electric cyan on near-black. Scanlines, diamond cursor, neon glow.</p>
+        <span class="card-tag tag-pink">Synthwave</span>
+      </div>
+    </a>
+
+    <a href="9-moss.html" class="card">
+      <div class="preview" style="background: linear-gradient(135deg, #131a10 0%, #0e1409 100%);">
+        <div style="text-align:center;">
+          <div style="width:50px;height:50px;border-radius:50%;border:1px solid rgba(123,194,90,0.25);background:rgba(123,194,90,0.06);margin:0 auto 8px;display:flex;align-items:center;justify-content:center;">
+            <div style="width:14px;height:14px;border-radius:50%;background:rgba(123,194,90,0.5);animation:breathe2 3s ease-in-out infinite;"></div>
+          </div>
+          <div style="width:60px;height:1px;background:rgba(123,194,90,0.3);margin:0 auto;"></div>
+        </div>
+        <span class="preview-label" style="color:#7bc25a;">Moss</span>
+      </div>
+      <div class="card-info">
+        <p class="card-num">Concept 09</p>
+        <p class="card-name">Moss</p>
+        <p class="card-desc">Nature calm. Deep forest greens, earth amber accents, organic dot grid. Quiet and focused.</p>
+        <span class="card-tag tag-forest">Nature Calm</span>
+      </div>
+    </a>
+
+    <a href="10-steel.html" class="card">
+      <div class="preview" style="background: linear-gradient(135deg, #1a1c1e 0%, #141618 100%);">
+        <div style="text-align:center;width:80%;margin:0 auto;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+            <div style="text-align:left;">
+              <div style="font-size:16px;font-weight:600;color:#d8dde3;font-family:monospace;letter-spacing:-0.02em;line-height:1;">60</div>
+              <div style="font-size:7px;letter-spacing:0.18em;color:#3e444c;font-family:monospace;">VOLUME</div>
+            </div>
+            <div style="width:1px;background:rgba(255,255,255,0.09);"></div>
+            <div style="text-align:right;">
+              <div style="font-size:16px;font-weight:600;color:#d8dde3;font-family:monospace;letter-spacing:-0.02em;line-height:1;">2.2</div>
+              <div style="font-size:7px;letter-spacing:0.18em;color:#3e444c;font-family:monospace;">SPEED</div>
+            </div>
+          </div>
+          <div style="height:1px;background:rgba(255,255,255,0.09);"></div>
+        </div>
+        <span class="preview-label" style="color:#9aa4b0;">Steel</span>
+      </div>
+      <div class="card-info">
+        <p class="card-num">Concept 10</p>
+        <p class="card-name">Steel</p>
+        <p class="card-desc">Industrial pro. Brushed metal texture, IBM Plex, measurement grid. Precise and utilitarian.</p>
+        <span class="card-tag tag-silver">Industrial Pro</span>
+      </div>
+    </a>
+  </div>
+
+  <style>
+    @keyframes breathe2 {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+  </style>
+</body>
+</html>
