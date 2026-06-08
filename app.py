@@ -8,6 +8,12 @@ from flask_socketio import SocketIO
 
 pyautogui.FAILSAFE = False
 
+try:
+    from ApplicationServices import AXIsProcessTrustedWithOptions
+    AXIsProcessTrustedWithOptions({'AXTrustedCheckOptionPrompt': True})
+except Exception:
+    pass
+
 app = Flask(__name__, static_folder="static")
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
@@ -79,4 +85,4 @@ if __name__ == "__main__":
     ip = get_local_ip()
     print(f"\n  Mac Remote running.")
     print(f"  Open on your phone: http://{ip}:{port}\n")
-    socketio.run(app, host="0.0.0.0", port=port, debug=False, allow_unsafe_werkzeug=True)
+    socketio.run(app, host="0.0.0.0", port=port, debug=False)
