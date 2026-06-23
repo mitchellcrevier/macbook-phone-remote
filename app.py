@@ -4,11 +4,13 @@ import socket
 import subprocess
 
 import pyautogui
+import Quartz
 
 from flask import Flask, jsonify, send_from_directory
 from flask_socketio import SocketIO
 
 pyautogui.FAILSAFE = False
+pyautogui.PAUSE = 0
 
 try:
     from ApplicationServices import AXIsProcessTrustedWithOptions
@@ -104,7 +106,13 @@ def handle_disconnect():
 def handle_mousemove(data):
     dx = data.get("dx", 0)
     dy = data.get("dy", 0)
-    pyautogui.moveRel(int(dx), int(dy), duration=0)
+    loc = Quartz.CGEventGetLocation(Quartz.CGEventCreate(None))
+    ev = Quartz.CGEventCreateMouseEvent(
+        None, Quartz.kCGEventMouseMoved,
+        (loc.x + dx, loc.y + dy),
+        Quartz.kCGMouseButtonLeft
+    )
+    Quartz.CGEventPost(Quartz.kCGSessionEventTap, ev)
 
 
 @socketio.on("leftclick")

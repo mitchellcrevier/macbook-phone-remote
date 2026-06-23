@@ -366,7 +366,7 @@ function setupTrackpad() {
     if (Math.abs(t.clientX - startX) > THRESH || Math.abs(t.clientY - startY) > THRESH) hasMoved = true;
     const dx = (t.clientX - lastX) * sensitivity;
     const dy = (t.clientY - lastY) * sensitivity;
-    if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) socket.emit('mousemove', { dx: Math.round(dx), dy: Math.round(dy) });
+    if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) socket.emit('mousemove', { dx, dy });
     lastX = t.clientX; lastY = t.clientY;
   }, { passive: false });
 
