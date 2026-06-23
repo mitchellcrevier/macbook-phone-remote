@@ -149,7 +149,7 @@ function refreshStatus() {
   dot.className = conn ? 'connected' : 'disconnected';
   if (txt) txt.textContent = conn ? 'LIVE'    : 'OFFLINE';
   if (lbl) lbl.textContent = conn ? 'live'    : 'offline';
-  if (rcn) rcn.style.display = conn ? 'none'  : 'flex';
+  if (rcn) rcn.style.display = conn ? 'none' : 'flex';
 }
 socket.on('connect',    refreshStatus);
 socket.on('disconnect', refreshStatus);
@@ -407,9 +407,12 @@ function initShared() {
 
   const reconnBtn = document.getElementById('btn-reconnect');
   if (reconnBtn) {
-    reconnBtn.addEventListener('touchstart', (e) => {
-      e.preventDefault(); reconnBtn.textContent = '...'; socket.connect();
-    }, { passive: false });
+    function doReconnect() {
+      reconnBtn.textContent = '...';
+      window.location.reload();
+    }
+    reconnBtn.addEventListener('touchstart', (e) => { e.preventDefault(); doReconnect(); }, { passive: false });
+    reconnBtn.addEventListener('click', doReconnect);
   }
 
   const kbdBtn = document.getElementById('btn-keyboard');
